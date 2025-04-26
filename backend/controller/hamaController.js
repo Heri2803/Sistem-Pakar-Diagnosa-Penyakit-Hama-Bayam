@@ -24,10 +24,12 @@ exports.getHamaById = async (req, res) => {
   }
 };
 
-// 🔹 Fungsi untuk menambahkan hama baru (kode otomatis & kategori default)
+// Pastikan sudah import 'Hama' model dan multer middleware sebelumnya
+
 exports.createHama = async (req, res) => {
   try {
     const { nama, deskripsi, penanganan } = req.body;
+    const file = req.file; 
 
     // Cek kode terakhir
     const lastHama = await Hama.findOne({ order: [['id', 'DESC']] });
@@ -37,19 +39,27 @@ exports.createHama = async (req, res) => {
       newKode = `H${lastNumber.toString().padStart(2, '0')}`;
     }
 
+    // Cek kalau ada file yang diupload
+    let fotoPath = '';
+    if (file) {
+      fotoPath = file.filename; 
+    }
+
     const newHama = await Hama.create({
       kode: newKode,
       nama,
       kategori: 'hama', // Default kategori
       deskripsi,
       penanganan,
+      foto: fotoPath, // ⬅️ Masukkan nama file ke database
     });
 
     res.status(201).json({ message: 'Hama berhasil ditambahkan', data: newHama });
   } catch (error) {
-    res.status(500).json({ message: 'Gagal menambahkan hama', error });
+    res.status(500).json({ message: 'Gagal menambahkan hama', error: error.message });
   }
 };
+
 
 // 🔹 Fungsi untuk mengupdate hama berdasarkan ID
 exports.updateHama = async (req, res) => {

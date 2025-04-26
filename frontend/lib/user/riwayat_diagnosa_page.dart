@@ -7,7 +7,8 @@ class RiwayatDiagnosaPage extends StatelessWidget {
       "deskripsi": "Penyakit yang umum pada bayam.",
       "penyakit": "Karat Putih",
       "hama": "Tidak ada hama spesifik",
-      "penanganan": "Gunakan fungisida sesuai anjuran dan potong daun yang terinfeksi."
+      "penanganan": "Gunakan fungisida sesuai anjuran dan potong daun yang terinfeksi.",
+      "gambar": "assets/images/karat putih.jpeg",
     },
     {
       "nama": "Virus Keriting",
@@ -76,11 +77,12 @@ class RiwayatDiagnosaPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => HasilDiagnosaPage(
-                              hasilDiagnosa: {
+                            builder: (context) => DetailRiwayatPage(
+                              detailRiwayat: {
                                 "penyakit": diagnosa["penyakit"] ?? "",
                                 "hama": diagnosa["hama"] ?? "",
                                 "penanganan": diagnosa["penanganan"] ?? "",
+                                "gambar": diagnosa["gambar"] ?? "",
                               },
                             ),
                           ),
@@ -98,23 +100,24 @@ class RiwayatDiagnosaPage extends StatelessWidget {
   }
 }
 
-class HasilDiagnosaPage extends StatelessWidget {
-  final Map<String, String> hasilDiagnosa;
+class DetailRiwayatPage extends StatelessWidget {
+  final Map<String, String> detailRiwayat;
 
-  HasilDiagnosaPage({required this.hasilDiagnosa});
+  DetailRiwayatPage({required this.detailRiwayat});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFF9DC08D),
       appBar: AppBar(
         backgroundColor: Color(0xFF9DC08D),
         title: Align(
           alignment: Alignment.topCenter,
           child: Padding(
-            padding: const EdgeInsets.only(right: 30), // Geser ke kiri
+            padding: const EdgeInsets.only(right: 30),
             child: Text(
               "Hasil Diagnosa",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color:  Colors.white),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
         ),
@@ -123,51 +126,65 @@ class HasilDiagnosaPage extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Container(
-        color: Color(0xFF9DC08D),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Center(
-            child: Card(
-              elevation: 6,
-              shape: RoundedRectangleBorder(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if (detailRiwayat['gambar'] != null) 
+              ClipRRect(
                 borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  detailRiwayat['gambar']!,
+                  height: 200,
+                  width: 200,
+                  fit: BoxFit.cover,
+                ),
               ),
-              child: Container(
-                width: 400,
-                height: 300, // Mengatur ukuran card
-                padding: EdgeInsets.all(16),
+            SizedBox(height: 16),
+            Card(
+              elevation: 6,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Nama Penyakit: ${hasilDiagnosa['penyakit']}",
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                      "Nama Penyakit: ${detailRiwayat['penyakit']}",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
                     ),
-                    SizedBox(height: 10),
+                    SizedBox(height: 16),
                     Text(
-                      "Nama Hama: ${hasilDiagnosa['hama']}",
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                      "Nama Hama: ${detailRiwayat['hama']}",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
                     ),
-                    SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            Card(
+              elevation: 6,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
                       "Cara Penanganan:",
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                     SizedBox(height: 10),
                     Text(
-                      hasilDiagnosa['penanganan'] ?? "Data tidak tersedia",
+                      detailRiwayat['penanganan'] ?? "Data tidak tersedia",
                       style: TextStyle(fontSize: 16, color: Colors.black),
                     ),
                   ],
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

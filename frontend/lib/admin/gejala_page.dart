@@ -68,6 +68,53 @@ class _GejalaPageState extends State<GejalaPage> {
       },
     );
   }
+  
+  void showEditDialog(BuildContext context, Map<String, dynamic> gejala) {
+  final TextEditingController editNamaController = TextEditingController(text: gejala['nama'] ?? '');
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(
+          'Edit Hama',
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: editNamaController,
+              decoration: InputDecoration(
+                labelText: 'Nama',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await apiService.updateGejala(
+                  gejala['id'],
+                  editNamaController.text
+                );
+                fetchGejala();
+                Navigator.pop(context);
+              } catch (e) {
+                print("Error updating gejala: $e");
+              }
+            },
+            child: Text('Simpan', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   // 🔹 Hapus gejala dari API
   void _hapusGejala(int id) async {
@@ -108,59 +155,124 @@ class _GejalaPageState extends State<GejalaPage> {
 }
 
 
+
+//pagination
+  int currentPage = 0;
+  int rowsPerPage = 10;
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Halaman Gejala')),
-      body: Column(
-        children: [
-          SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 20.0),
-                child: ElevatedButton(
-                  onPressed: _tambahGejala,
-                  child: Text('Tambah Gejala'),
+Widget build(BuildContext context) {
+  int start = currentPage * rowsPerPage;
+  int end = (start + rowsPerPage < gejalaList.length)
+      ? start + rowsPerPage
+      : gejalaList.length;
+  List currentPageData = gejalaList.sublist(start, end);
+
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Halaman Gejala'),
+    ),
+    body: Column(
+      children: [
+        SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 20.0),
+              child: ElevatedButton(
+                onPressed: _tambahGejala,
+                child: Text(
+                  'Tambah Gejala',
+                  style: TextStyle(color: Colors.green[200]),
                 ),
               ),
-            ],
-          ),
-          SizedBox(height: 20),
-          Expanded(
+            ),
+          ],
+        ),
+        SizedBox(height: 20),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
             child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.9,
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
                 child: DataTable(
                   columnSpacing: 20,
-                  headingRowColor: MaterialStateColor.resolveWith((states) => Colors.grey[300]!),
+                  headingRowColor: MaterialStateColor.resolveWith(
+                    (states) => const Color(0xFF9DC08D),
+                  ),
                   columns: [
-                    DataColumn(label: SizedBox(width: 50, child: Text('No'))),
+                    DataColumn(label: SizedBox(width: 35, child: Text('No'))),
                     DataColumn(label: SizedBox(width: 80, child: Text('Kode'))),
                     DataColumn(label: SizedBox(width: 150, child: Text('Nama'))),
                     DataColumn(label: SizedBox(width: 80, child: Text('Aksi'))),
                   ],
-                  rows: gejalaList.map(
-                    (gejala) => DataRow(cells: [
-                      DataCell(Text((gejalaList.indexOf(gejala) + 1).toString())), // Nomor
-                      DataCell(Text(gejala['kode'])), // Kode Gejala
-                      DataCell(Text(gejala['nama'])), // Nama Gejala
-                      DataCell(
-                        IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _konfirmasiHapus(gejala['id']), // Hapus data
-                        ),
+                  rows: [
+                    ...currentPageData.map(
+                      (gejala) => DataRow(
+                        cells: [
+                          DataCell(Text((gejalaList.indexOf(gejala) + 1).toString())),
+                          DataCell(Text(gejala['kode'] ?? '-')),
+                          DataCell(Text(gejala['nama'] ?? '-')),
+                          DataCell(
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit, color: Color(0xFF9DC08D)),
+                                  onPressed: () => showEditDialog(context, gejala),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _konfirmasiHapus(gejala['id']),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ]),
-                  ).toList(),
+                    ),
+                    DataRow(
+                      cells: [
+                        DataCell(Container()),
+                        DataCell(Container()),
+                        DataCell(
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.chevron_left),
+                                  onPressed: currentPage > 0
+                                      ? () => setState(() => currentPage--)
+                                      : null,
+                                ),
+                                Text(' ${currentPage + 1}'),
+                                IconButton(
+                                  icon: Icon(Icons.chevron_right),
+                                  onPressed:
+                                      (currentPage + 1) * rowsPerPage < gejalaList.length
+                                          ? () => setState(() => currentPage++)
+                                          : null,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        DataCell(Container()),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 }

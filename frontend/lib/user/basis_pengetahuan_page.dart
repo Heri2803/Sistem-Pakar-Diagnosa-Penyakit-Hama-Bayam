@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'hama_page.dart';
+import 'penyakit_page.dart';
 
 class BasisPengetahuanPage extends StatelessWidget {
   @override
@@ -31,7 +33,12 @@ class BasisPengetahuanPage extends StatelessWidget {
             // Button pertama
             ElevatedButton(
               onPressed: () {
-                // Aksi untuk button pertama
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HamaPage(),
+                    ), // Perbaikan di sini
+                  );
               },
               style: ElevatedButton.styleFrom(
                 shape: RoundedRectangleBorder(
@@ -67,7 +74,12 @@ class BasisPengetahuanPage extends StatelessWidget {
             // Button kedua
             ElevatedButton(
               onPressed: () {
-                // Aksi untuk button kedua
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PenyakitPage(),
+                    ), 
+                  );
               },
               style: ElevatedButton.styleFrom(
                 shape: RoundedRectangleBorder(

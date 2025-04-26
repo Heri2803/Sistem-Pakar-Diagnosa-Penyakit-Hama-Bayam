@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/api_services/api_services.dart';
 
 // Halaman Pendaftaran
 class RegisterPage extends StatelessWidget {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController alamatController = TextEditingController();
+  final TextEditingController nomorHpController = TextEditingController();
+
+  final ApiService apiService = ApiService();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,6 +39,7 @@ class RegisterPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      controller: nameController,
                     ),
                     SizedBox(height: 20),
                     TextField(
@@ -39,6 +49,7 @@ class RegisterPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      controller: emailController,
                     ),
                     SizedBox(height: 20),
                     TextField(
@@ -49,6 +60,7 @@ class RegisterPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      controller: passwordController,
                     ),
                     SizedBox(height: 20),
                     TextField(
@@ -58,6 +70,7 @@ class RegisterPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      controller: emailController,
                     ),
                     SizedBox(height: 20),
                     TextField(
@@ -67,6 +80,7 @@ class RegisterPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      controller: alamatController,
                     ),
                     SizedBox(height: 20),
                     TextField(
@@ -76,6 +90,7 @@ class RegisterPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      controller: nomorHpController,
                     ),
                     SizedBox(height: 20),
                     SizedBox(
@@ -88,8 +103,24 @@ class RegisterPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {
-                          // Logic Pendaftaran
+                        onPressed: () async {
+                          try {
+                            await apiService.registerUser(
+                              name: nameController.text,
+                              email: emailController.text,
+                              password: passwordController.text,
+                              alamat: alamatController.text,
+                              nomorTelepon: nomorHpController.text,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Registrasi berhasil!')),
+                            );
+                            Navigator.pop(context); // kembali ke login page
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Registrasi gagal: $e')),
+                            );
+                          }
                         },
                         child: Text(
                           'Daftar',

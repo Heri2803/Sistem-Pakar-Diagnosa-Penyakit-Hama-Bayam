@@ -73,14 +73,21 @@ class HomePage extends StatelessWidget {
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
+            child: Wrap(
+              spacing: 20, // Jarak horizontal antar tombol
+              runSpacing: 20, // Jarak vertikal antar baris tombol
+              alignment: WrapAlignment.center, // Menempatkan tombol di tengah
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ButtonMenu(
                       title: "Riwayat Diagnosa",
-                      icon: Icons.medical_services,
+                      customIcon: Image.asset(
+                        'assets/images/Order History.png',
+                        width: 48,
+                        height: 48,
+                      ),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -92,7 +99,11 @@ class HomePage extends StatelessWidget {
                     ),
                     ButtonMenu(
                       title: "Profile",
-                      icon: Icons.bug_report,
+                      customIcon: Image.asset(
+                    'assets/images/Test Account.png',
+                    width: 48,
+                    height: 48,
+                  ),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -110,7 +121,11 @@ class HomePage extends StatelessWidget {
                   children: [
                     ButtonMenu(
                       title: "Basis Pengetahuan",
-                      icon: Icons.info,
+                      customIcon: Image.asset(
+                    'assets/images/Literature.png',
+                    width: 48,
+                    height: 48,
+                  ),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -122,7 +137,11 @@ class HomePage extends StatelessWidget {
                     ),
                     ButtonMenu(
                       title: "Info Pakar",
-                      icon: Icons.exit_to_app,
+                      customIcon: Image.asset(
+                        'assets/images/Businessman.png',
+                        width: 48,
+                        height: 48,
+                      ),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -148,12 +167,12 @@ class HomePage extends StatelessWidget {
 // Widget untuk tombol menu
 class ButtonMenu extends StatelessWidget {
   final String title;
-  final IconData icon;
+  final Widget customIcon;
   final VoidCallback onTap;
 
   const ButtonMenu({
     required this.title,
-    required this.icon,
+    required this.customIcon,
     required this.onTap,
     Key? key,
   }) : super(key: key);
@@ -175,10 +194,11 @@ class ButtonMenu extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 30, color: Colors.green), // Ikon
+            customIcon, 
             const SizedBox(height: 5),
             Text(
               title,
+              textAlign: TextAlign.center, 
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],

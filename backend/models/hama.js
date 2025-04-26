@@ -27,6 +27,10 @@ Hama.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    foto: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    }
   },
   {
     sequelize,

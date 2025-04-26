@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/admin/edit_penyakit_page.dart';
 import 'package:frontend/api_services/api_services.dart';
+import 'tambah_penyakit_page.dart';
+import 'edit_penyakit_page.dart';
 
 class PenyakitPage extends StatefulWidget {
   @override
@@ -7,10 +10,10 @@ class PenyakitPage extends StatefulWidget {
 }
 
 class _PenyakitPageState extends State<PenyakitPage> {
-   final ApiService apiService = ApiService();
+  final ApiService apiService = ApiService();
   List<Map<String, dynamic>> penyakitList = [];
 
-   @override
+  @override
   void initState() {
     super.initState();
     _fetchPenyakit();
@@ -38,97 +41,173 @@ class _PenyakitPageState extends State<PenyakitPage> {
   }
 
   void _konfirmasiHapus(int id) {
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text('Konfirmasi Hapus'),
-        content: Text('Apakah Anda yakin ingin menghapus gejala ini?'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Tutup pop-up tanpa menghapus
-            },
-            child: Text('Tidak'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Tutup pop-up
-              _hapusPenyakit(id); // Lanjutkan proses hapus
-            },
-            child: Text('Ya, Hapus'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-  void _tambahPenyakit() {
-    TextEditingController namaController = TextEditingController();
-    TextEditingController penangananController = TextEditingController();
-    TextEditingController deskripsiController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Tambah Penyakit Baru'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: namaController,
-                decoration: InputDecoration(labelText: 'Nama'),
-              ),
-              TextField(
-                controller: deskripsiController,
-                decoration: InputDecoration(labelText: 'Deskripsi'),
-              ),
-              TextField(
-                controller: penangananController,
-                decoration: InputDecoration(labelText: 'Penanganan'),
-              ),
-            ],
-          ),
+          title: Text('Konfirmasi Hapus'),
+          content: Text('Apakah Anda yakin ingin menghapus gejala ini?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Batal'),
+              onPressed: () {
+                Navigator.pop(context); // Tutup pop-up tanpa menghapus
+              },
+              child: Text('Tidak'),
             ),
             ElevatedButton(
-              onPressed: () async {
-                if (namaController.text.isNotEmpty &&
-                    deskripsiController.text.isNotEmpty &&
-                    penangananController.text.isNotEmpty) {
-                  try {
-                    await apiService.createPenyakit(
-                      namaController.text,
-                      deskripsiController.text,
-                      penangananController.text,
-                    );
-                    _fetchPenyakit();
-                    Navigator.pop(context);
-                  } catch (e) {
-                    print("Error adding penyakit: $e");
-                  }
-                }
+              onPressed: () {
+                Navigator.pop(context); // Tutup pop-up
+                _hapusPenyakit(id); // Lanjutkan proses hapus
               },
-              child: Text('Simpan'),
+              child: Text('Ya, Hapus'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             ),
           ],
         );
       },
-    ).then((_) {
-      namaController.dispose();
-      deskripsiController.dispose();
-      penangananController.dispose();
-    });
+    );
   }
+
+  // void _tambahPenyakit() {
+  //   TextEditingController namaController = TextEditingController();
+  //   TextEditingController penangananController = TextEditingController();
+  //   TextEditingController deskripsiController = TextEditingController();
+
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) {
+  //       return AlertDialog(
+  //         title: Text('Tambah Penyakit Baru'),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             TextField(
+  //               controller: namaController,
+  //               decoration: InputDecoration(labelText: 'Nama'),
+  //             ),
+  //             TextField(
+  //               controller: deskripsiController,
+  //               decoration: InputDecoration(labelText: 'Deskripsi'),
+  //             ),
+  //             TextField(
+  //               controller: penangananController,
+  //               decoration: InputDecoration(labelText: 'Penanganan'),
+  //             ),
+  //           ],
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.pop(context),
+  //             child: Text('Batal'),
+  //           ),
+  //           ElevatedButton(
+  //             onPressed: () async {
+  //               if (namaController.text.isNotEmpty &&
+  //                   deskripsiController.text.isNotEmpty &&
+  //                   penangananController.text.isNotEmpty) {
+  //                 try {
+  //                   await apiService.createPenyakit(
+  //                     namaController.text,
+  //                     deskripsiController.text,
+  //                     penangananController.text,
+  //                   );
+  //                   _fetchPenyakit();
+  //                   Navigator.pop(context);
+  //                 } catch (e) {
+  //                   print("Error adding penyakit: $e");
+  //                 }
+  //               }
+  //             },
+  //             child: Text('Simpan'),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   ).then((_) {
+  //     namaController.dispose();
+  //     deskripsiController.dispose();
+  //     penangananController.dispose();
+  //   });
+  // }
+
+//   void showEditDialog(BuildContext context, Map<String, dynamic> penyakit) {
+//   final TextEditingController editNamaController = TextEditingController(text: penyakit['nama'] ?? '');
+//   final TextEditingController editDeskripsiController = TextEditingController(text: penyakit['deskripsi'] ?? '');
+//   final TextEditingController editPenangananController = TextEditingController(text: penyakit['penanganan'] ?? '');
+
+//   showDialog(
+//     context: context,
+//     builder: (context) {
+//       return AlertDialog(
+//         title: Text(
+//           'Edit Penyakit',
+//         ),
+//         content: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             TextField(
+//               controller: editNamaController,
+//               decoration: InputDecoration(
+//                 labelText: 'Nama',
+//               ),
+//             ),
+//             TextField(
+//               controller: editDeskripsiController,
+//               decoration: InputDecoration(
+//                 labelText: 'Deskripsi',
+//               ),
+//             ),
+//             TextField(
+//               controller: editPenangananController,
+//               decoration: InputDecoration(
+//                 labelText: 'Penanganan',
+//               ),
+//             ),
+//           ],
+//         ),
+//         actions: [
+//           TextButton(
+//             onPressed: () => Navigator.pop(context),
+//             child: Text(
+//               'Batal',
+//               style: TextStyle(color: Colors.black),
+//             ),
+//           ),
+//           ElevatedButton(
+//             onPressed: () async {
+//               try {
+//                 await apiService.updatePenyakit(
+//                   penyakit['id'],
+//                   editNamaController.text,
+//                   editDeskripsiController.text,
+//                   editPenangananController.text,
+//                 );
+//                 _fetchPenyakit();
+//                 Navigator.pop(context);
+//               } catch (e) {
+//                 print("Error updating penyakit: $e");
+//               }
+//             },
+//             child: Text('Simpan', style: TextStyle(color: Colors.black)),
+//           ),
+//         ],
+//       );
+//     },
+//   );
+// }
+
+  //pagination
+  int currentPage = 0;
+  int rowsPerPage = 10;
 
   @override
   Widget build(BuildContext context) {
+    int start = currentPage * rowsPerPage;
+    int end =
+        (start + rowsPerPage < penyakitList.length)
+            ? start + rowsPerPage
+            : penyakitList.length;
+    List currentPageData = penyakitList.sublist(start, end);
     return Scaffold(
       appBar: AppBar(title: Text('Halaman Penyakit')),
       body: Column(
@@ -140,45 +219,146 @@ class _PenyakitPageState extends State<PenyakitPage> {
               Padding(
                 padding: const EdgeInsets.only(right: 20.0),
                 child: ElevatedButton(
-                  onPressed: _tambahPenyakit, // Fungsi untuk menambah data penyakit
-                  child: Text('Tambah Penyakit'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => TambahPenyakitPage(
+                              onPenyakitAdded:
+                                  _fetchPenyakit, // Panggil fungsi refresh setelah tambah
+                            ),
+                      ),
+                    );
+                  }, // Fungsi untuk menambah data penyakit
+                  child: Text(
+                    'Tambah Penyakit',
+                    style: TextStyle(color: Colors.green[200]),
+                    ),
                 ),
               ),
             ],
           ),
           SizedBox(height: 20),
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.95,
-                child: DataTable(
-                  columnSpacing: 5,
-                  headingRowColor:
-                      MaterialStateColor.resolveWith((states) => Colors.grey[300]!),
-                  columns: [
-                    DataColumn(label: SizedBox(width: 35, child: Text('No'))),
-                    DataColumn(label: SizedBox(width: 50, child: Text('Kode'))),
-                    DataColumn(label: SizedBox(width: 100, child: Text('Nama'))),
-                    DataColumn(label: SizedBox(width: 100, child: Text('Deskripsi'))),
-                    DataColumn(label: SizedBox(width: 100, child: Text('Penanganan'))),
-                    DataColumn(label: SizedBox(width: 50, child: Text('Aksi'))),
-                  ],
-                  rows: penyakitList.map(
-                    (penyakit) => DataRow(cells: [
-                      DataCell(Text((penyakitList.indexOf(penyakit) + 1).toString())), // Nomor
-                      DataCell(Text(penyakit['kode'] ?? '-')), // Kode Penyakit
-                      DataCell(Text(penyakit['nama'] ?? '-')), // Nama Penyakit
-                      DataCell(Text(penyakit['deskripsi'] ?? '-')), // Deskripsi
-                      DataCell(Text(penyakit['penanganan'] ?? '-')), // Penanganan
-                      DataCell(
-                        IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _konfirmasiHapus(penyakit['id']), // Hapus data
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    columnSpacing: 20,
+                    headingRowColor: MaterialStateColor.resolveWith(
+                      (states) => const Color(0xFF9DC08D),
+                    ),
+                    columns: [
+                      DataColumn(label: SizedBox(width: 35, child: Text('No'))),
+                      DataColumn(
+                        label: SizedBox(width: 50, child: Text('Kode')),
+                      ),
+                      DataColumn(
+                        label: SizedBox(width: 100, child: Text('Nama')),
+                      ),
+                      DataColumn(
+                        label: SizedBox(width: 100, child: Text('Deskripsi')),
+                      ),
+                      DataColumn(
+                        label: SizedBox(width: 100, child: Text('Penanganan')),
+                      ),
+                      DataColumn(
+                        label: SizedBox(width: 50, child: Text('Aksi')),
+                      ),
+                    ],
+                    rows: [
+                      ...currentPageData.map(
+                        (penyakit) => DataRow(
+                          cells: [
+                            DataCell(
+                              Text((penyakitList.indexOf(penyakit) + 1).toString()),
+                            ),
+                            DataCell(Text(penyakit['kode'] ?? '-')),
+                            DataCell(Text(penyakit['nama'] ?? '-')),
+                            DataCell(Text(penyakit['deskripsi'] ?? '-')),
+                            DataCell(Text(penyakit['penanganan'] ?? '-')),
+                            DataCell(
+                              Row(
+                                children: [
+                                IconButton(
+                                    icon: Icon(
+                                      Icons.edit,
+                                      color: Color(0xFF9DC08D),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => EditPenyakitPage(
+                                                idPenyakit:
+                                                    penyakit['id'], // pastikan 'hama' adalah Map dari API kamu
+                                                namaAwal: penyakit['nama'] ?? '',
+                                                deskripsiAwal:
+                                                    penyakit['deskripsi'] ?? '',
+                                                penangananAwal:
+                                                    penyakit['penanganan'] ?? '',
+                                                onPenyakitUpdated:
+                                                    _fetchPenyakit, // fungsi untuk refresh list setelah update
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete, color: Colors.red),
+                                    onPressed:
+                                        () => _konfirmasiHapus(penyakit['id']),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ]),
-                  ).toList(),
+                      DataRow(
+                        cells: [
+                          DataCell(Container()),
+                          DataCell(Container()),
+                          DataCell(
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.chevron_left),
+                                    onPressed:
+                                        currentPage > 0
+                                            ? () =>
+                                                setState(() => currentPage--)
+                                            : null,
+                                  ),
+                                  Text(' ${currentPage + 1}'),
+                                  IconButton(
+                                    icon: Icon(Icons.chevron_right),
+                                    onPressed:
+                                        (currentPage + 1) * rowsPerPage <
+                                                penyakitList.length
+                                            ? () =>
+                                                setState(() => currentPage++)
+                                            : null,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          DataCell(Container()),
+                          DataCell(Container()),
+                          DataCell(Container()),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

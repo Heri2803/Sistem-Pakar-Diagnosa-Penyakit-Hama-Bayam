@@ -281,5 +281,51 @@ class ApiService {
       throw Exception('Gagal menghapus penyakit');
     }
   }
+
+  //registrasi 
+  Future<void> registerUser({
+    required String name,
+    required String email,
+    required String password,
+    required String alamat,
+    required String nomorTelepon,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/register'), // Endpoint register
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'password': password,
+        'alamat': alamat,
+        'nomorTelepon': nomorTelepon,
+        'role': 'user', // role default
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception(jsonDecode(response.body)['message'] ?? 'Gagal mendaftar');
+    }
+  }
+
+  // Fungsi untuk lupa password
+  Future<void> forgotPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/forgot-password'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        'email': email,
+        'password': newPassword, // Kirim password baru
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['message'] ?? 'Gagal memperbarui password');
+    }
+  }
+
 }
 
