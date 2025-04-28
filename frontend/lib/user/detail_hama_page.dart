@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class DetailHamaPage extends StatelessWidget {
-  final Map<String, String> detailRiwayat;
+  final Map<String, dynamic> detailHama;
 
-  const DetailHamaPage({required this.detailRiwayat});
+  const DetailHamaPage({required this.detailHama});
 
   @override
   Widget build(BuildContext context) {
@@ -25,11 +25,11 @@ class DetailHamaPage extends StatelessWidget {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              if (detailRiwayat["gambar"] != null && detailRiwayat["gambar"]!.isNotEmpty)
+              if (detailHama["gambar"] != null && detailHama["gambar"]!.isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.asset(
-                    detailRiwayat["gambar"]!,
+                    detailHama["gambar"]!,
                     height: 200,
                     width: 200, // Biar gambar full lebar
                     fit: BoxFit.cover,
@@ -54,7 +54,7 @@ class DetailHamaPage extends StatelessWidget {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          detailRiwayat["nama hama"] ?? "Nama hama tidak tersedia",
+                          detailHama["nama"] ?? "Nama hama tidak tersedia",
                           style: TextStyle(fontSize: 16),
                         ),
                       ],
@@ -81,7 +81,7 @@ class DetailHamaPage extends StatelessWidget {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          detailRiwayat["deskripsi"] ?? "Deskripsi tidak tersedia",
+                          detailHama["deskripsi"] ?? "Deskripsi tidak tersedia",
                           style: TextStyle(fontSize: 16),
                         ),
                         SizedBox(height: 16),
@@ -91,7 +91,7 @@ class DetailHamaPage extends StatelessWidget {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          detailRiwayat["penanganan"] ?? "Penanganan tidak tersedia",
+                          detailHama["penanganan"] ?? "Penanganan tidak tersedia",
                           style: TextStyle(fontSize: 16),
                         ),
                       ],

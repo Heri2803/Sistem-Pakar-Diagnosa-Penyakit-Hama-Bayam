@@ -1,33 +1,20 @@
 import 'package:flutter/material.dart';
 import 'detail_penyakit_page.dart';
+import 'package:frontend/api_services/api_services.dart';
 
-class PenyakitPage extends StatelessWidget {
-  final List<Map<String, String>> penyakitList= [
-    {
-      "nama penyakit": "Karat Putih",
-      "deskripsi": "Penyakit yang umum pada bayam.",
-      "penanganan": "Gunakan fungisida sesuai anjuran dan potong daun yang terinfeksi.",
-      "gambar": "assets/images/karat putih.jpeg",
-    },
-    {
-      "nama penyakit": "Virus Keriting",
-      "deskripsi": "Disebabkan oleh infeksi virus.",
-      "penanganan": "Musnahkan tanaman terinfeksi dan kontrol vektor seperti kutu daun.",
-      "gambar": "assets/images/virus_keriting.jpeg",
-    },
-    {
-      "nama penyakit": "Kekurangan Mangan",
-      "deskripsi": "Kekurangan unsur hara mikro.",
-      "penanganan": "Tambahkan pupuk yang mengandung mangan (Mn).",
-      "gambar": "assets/images/kekurangan_mangan.jpeg",
-    },
-    {
-      "nama penyakit": "Downy Mildew",
-      "deskripsi": "Penyakit jamur pada bayam.",
-      "penanganan": "Gunakan fungisida berbahan aktif metalaxyl dan perbaiki drainase tanah.",
-      "gambar": "assets/images/downy_mildew.jpeg",
-    },
-  ];
+class PenyakitPage extends StatefulWidget {
+  @override
+  _PenyakitPageState createState() => _PenyakitPageState();
+}
+
+class _PenyakitPageState extends State<PenyakitPage> {
+  late Future<List<Map<String, dynamic>>> _penyakitListFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _penyakitListFuture = ApiService().getPenyakit();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,37 +39,45 @@ class PenyakitPage extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          children: [
-            SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _penyakitListFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator(color: Colors.white));
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Gagal memuat data', style: TextStyle(color: Colors.white)));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text('Tidak ada data tersedia', style: TextStyle(color: Colors.white)));
+            } else {
+              final penyakitList = snapshot.data!;
+
+              return ListView.builder(
                 itemCount: penyakitList.length,
                 itemBuilder: (context, index) {
-                  final diagnosa = penyakitList[index];
+                  final penyakit = penyakitList[index];
                   return Card(
                     elevation: 4,
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     child: ListTile(
                       title: Text(
-                        diagnosa["nama penyakit"] ?? "Tidak ada data",
+                        penyakit["nama"] ?? "Tidak ada data",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Text(diagnosa["deskripsi"] ?? "Deskripsi tidak tersedia"),
+                      subtitle: Text(penyakit["deskripsi"] ?? "Deskripsi tidak tersedia"),
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => DetailPenyakitPage(detailPenyakit: diagnosa),
+                            builder: (context) => DetailPenyakitPage(detailPenyakit: penyakit),
                           ),
                         );
                       },
                     ),
                   );
                 },
-              ),
-            ),
-          ],
+              );
+            }
+          },
         ),
       ),
     );

@@ -1,33 +1,20 @@
 import 'package:flutter/material.dart';
 import 'detail_hama_page.dart';
+import 'package:frontend/api_services/api_services.dart';
 
-class HamaPage extends StatelessWidget {
-  final List<Map<String, String>> hamaList = [
-    {
-      "nama hama": "Karat Putih",
-      "deskripsi": "Penyakit yang umum pada bayam.",
-      "penanganan": "Gunakan fungisida sesuai anjuran dan potong daun yang terinfeksi.",
-      "gambar": "assets/images/karat putih.jpeg",
-    },
-    {
-      "nama hama": "Virus Keriting",
-      "deskripsi": "Disebabkan oleh infeksi virus.",
-      "penanganan": "Musnahkan tanaman terinfeksi dan kontrol vektor seperti kutu daun.",
-      "gambar": "assets/images/virus_keriting.jpeg",
-    },
-    {
-      "nama hama": "Kekurangan Mangan",
-      "deskripsi": "Kekurangan unsur hara mikro.",
-      "penanganan": "Tambahkan pupuk yang mengandung mangan (Mn).",
-      "gambar": "assets/images/kekurangan_mangan.jpeg",
-    },
-    {
-      "nama hama": "Downy Mildew",
-      "deskripsi": "Penyakit jamur pada bayam.",
-      "penanganan": "Gunakan fungisida berbahan aktif metalaxyl dan perbaiki drainase tanah.",
-      "gambar": "assets/images/downy_mildew.jpeg",
-    },
-  ];
+class HamaPage extends StatefulWidget {
+  @override
+  _HamaPageState createState() => _HamaPageState();
+}
+
+class _HamaPageState extends State<HamaPage> {
+  late Future<List<Map<String, dynamic>>> _hamaListFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _hamaListFuture = ApiService().getHama();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,11 +39,19 @@ class HamaPage extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          children: [
-            SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _hamaListFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator(color: Colors.white));
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Gagal memuat data', style: TextStyle(color: Colors.white)));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text('Tidak ada data tersedia', style: TextStyle(color: Colors.white)));
+            } else {
+              final hamaList = snapshot.data!;
+
+              return ListView.builder(
                 itemCount: hamaList.length,
                 itemBuilder: (context, index) {
                   final diagnosa = hamaList[index];
@@ -65,7 +60,7 @@ class HamaPage extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     child: ListTile(
                       title: Text(
-                        diagnosa["nama hama"] ?? "Tidak ada data",
+                        diagnosa["nama"] ?? "Tidak ada data",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(diagnosa["deskripsi"] ?? "Deskripsi tidak tersedia"),
@@ -73,16 +68,16 @@ class HamaPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => DetailHamaPage(detailRiwayat: diagnosa),
+                            builder: (context) => DetailHamaPage(detailHama: diagnosa),
                           ),
                         );
                       },
                     ),
                   );
                 },
-              ),
-            ),
-          ],
+              );
+            }
+          },
         ),
       ),
     );

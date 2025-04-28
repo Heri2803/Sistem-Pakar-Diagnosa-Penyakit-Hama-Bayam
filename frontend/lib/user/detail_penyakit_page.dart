@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DetailPenyakitPage extends StatelessWidget {
-  final Map<String, String> detailPenyakit;
+  final Map<String, dynamic> detailPenyakit;
 
   const DetailPenyakitPage({required this.detailPenyakit});
 
@@ -54,7 +54,7 @@ class DetailPenyakitPage extends StatelessWidget {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          detailPenyakit["nama penyakit"] ?? "Nama penyakit tidak tersedia",
+                          detailPenyakit["nama"] ?? "Nama penyakit tidak tersedia",
                           style: TextStyle(fontSize: 16),
                         ),
                       ],
