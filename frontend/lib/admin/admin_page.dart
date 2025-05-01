@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'hama_page.dart';
 import 'penyakit_page.dart';
 import 'gejala_page.dart';
+import 'rule_page.dart';
 import 'package:frontend/api_services/api_services.dart';
 import 'package:frontend/user/login_page.dart';
 
@@ -59,6 +60,15 @@ class AdminPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => GejalaPage()),
+                  );
+                },
+              ),
+              ListTile(
+                title: Text('Halaman Aturan'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => RulePage()),
                   );
                 },
               ),

@@ -1,9 +1,11 @@
-const Hama = require('../models/hama');
+const {Hama} = require('../models');
 
 // 🔹 Fungsi untuk mendapatkan semua data hama
 exports.getAllHama = async (req, res) => {
   try {
-    const dataHama = await Hama.findAll();
+    const dataHama = await Hama.findAll({
+      attributes: ['id', 'nama' , 'deskripsi' , 'penanganan']
+    });
     res.status(200).json({ message: 'Data hama berhasil diambil', data: dataHama });
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengambil data hama', error });

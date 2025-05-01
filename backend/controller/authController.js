@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const argon2 = require('argon2');
 const randomstring = require('randomstring');
-const  User  = require('../models/user'); // Pastikan sesuai dengan struktur project
+const  {User}  = require('../models'); // Pastikan sesuai dengan struktur project
 require('dotenv').config();
 
 // Fungsi untuk membuat token JWT
@@ -12,7 +12,6 @@ const generateToken = (user) => {
         { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
     );
 };
-
 
 // Menambahkan user baru dengan hashing Argon2
 exports.register = async (req, res) => {

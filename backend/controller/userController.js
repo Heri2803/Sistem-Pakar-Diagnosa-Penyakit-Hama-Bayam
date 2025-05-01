@@ -1,4 +1,4 @@
-const User = require('../models/user');
+const {User} = require('../models');
 const argon2 = require('argon2');
 const { Op } = require('sequelize');
 

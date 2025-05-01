@@ -1,20 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const ruleController = require('../controller/rulesController');
+const ruleController = require('../controller/rulesHamaController');
 
 /**
  * @swagger
  * tags:
- *   name: Rules_penyakit
+ *   name: Rules_hama
  *   description: API untuk mengelola aturan (rules)
  */
 
 /**
  * @swagger
- * /api/rules_penyakit:
+ * /api/rules_hama:
  *   post:
  *     summary: Membuat aturan baru
- *     tags: [Rules_penyakit]
+ *     tags: [Rules_hama]
  *     requestBody:
  *       required: true
  *       content:
@@ -27,7 +27,7 @@ const ruleController = require('../controller/rulesController');
  *             properties:
  *               id_gejala:
  *                 type: integer
- *               id_penyakit:
+ *               id_hama:
  *                 type: integer
  *               nilai_pakar:
  *                 type: number
@@ -40,28 +40,28 @@ const ruleController = require('../controller/rulesController');
  *       500:
  *         description: Terjadi kesalahan server
  */
-router.post('/', ruleController.createRulePenyakit);
+router.post('/', ruleController.createRuleHama);
 
 /**
  * @swagger
- * /api/rules_penyakit:
+ * /api/rules_hama:
  *   get:
  *     summary: Menampilkan semua aturan
- *     tags: [Rules_penyakit]
+ *     tags: [Rules_hama]
  *     responses:
  *       200:
  *         description: Daftar rules berhasil diambil
  *       500:
  *         description: Terjadi kesalahan server
  */
-router.get('/', ruleController.getRulesPenyakit);
+router.get('/', ruleController.getRulesHama);
 
 /**
  * @swagger
- * /api/rules_penyakit/{id}:
+ * /api/rules_hama/{id}:
  *   put:
  *     summary: Memperbarui aturan berdasarkan ID
- *     tags: [Rules_penyakit]
+ *     tags: [Rules_hama]
  *     parameters:
  *       - in: path
  *         name: id
@@ -78,7 +78,7 @@ router.get('/', ruleController.getRulesPenyakit);
  *             properties:
  *               id_gejala:
  *                 type: integer
- *               id_penyakit:
+ *               id_hama:
  *                 type: integer
  *               nilai_pakar:
  *                 type: number
@@ -91,14 +91,14 @@ router.get('/', ruleController.getRulesPenyakit);
  *       500:
  *         description: Terjadi kesalahan server
  */
-router.put('/:id', ruleController.updateRulePenyakit);
+router.put('/:id', ruleController.updateRuleHama);
 
 /**
  * @swagger
- * /api/rules_penyakit/{id}:
+ * /api/rules_hama/{id}:
  *   delete:
  *     summary: Menghapus aturan berdasarkan ID
- *     tags: [Rules_penyakit]
+ *     tags: [Rules_hama]
  *     parameters:
  *       - in: path
  *         name: id
@@ -114,6 +114,6 @@ router.put('/:id', ruleController.updateRulePenyakit);
  *       500:
  *         description: Terjadi kesalahan server
  */
-router.delete('/:id', ruleController.deleteRulePenyakit);
+router.delete('/:id', ruleController.deleteRuleHama);
 
 module.exports = router;

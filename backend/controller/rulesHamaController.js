@@ -1,18 +1,18 @@
-const { Rule_penyakit } = require('../models');
+const { Rule_hama } = require('../models');
 
 // 🔥 Buat aturan baru
-exports.createRulePenyakit = async (req, res) => {
+exports.createRuleHama = async (req, res) => {
   try {
-    const { id_gejala, id_penyakit, nilai_pakar } = req.body;
+    const { id_gejala, id_hama, nilai_pakar } = req.body;
 
     // Validasi minimal
-    if (!id_gejala || (!id_penyakit) || !nilai_pakar) {
+    if (!id_gejala || (!id_hama) || !nilai_pakar) {
       return res.status(400).json({ message: 'Data tidak lengkap' });
     }
 
-    const newRule = await Rule_penyakit.create({
+    const newRule = await Rule_hama.create({
       id_gejala,
-      id_penyakit,
+      id_hama,
       nilai_pakar
     });
 
@@ -24,9 +24,9 @@ exports.createRulePenyakit = async (req, res) => {
 };
 
 // 🔥 Ambil semua aturan
-exports.getRulesPenyakit = async (req, res) => {
+exports.getRulesHama = async (req, res) => {
   try {
-    const rules = await Rule_penyakit.findAll();
+    const rules = await Rule_hama.findAll();
 
     res.status(200).json({ message: 'Daftar Rules', data: rules });
   } catch (error) {
@@ -36,19 +36,19 @@ exports.getRulesPenyakit = async (req, res) => {
 };
 
 // 🔥 Update aturan
-exports.updateRulePenyakit = async (req, res) => {
+exports.updateRuleHama = async (req, res) => {
   try {
     const { id } = req.params;
-    const { id_gejala, id_penyakit, nilai_pakar } = req.body;
+    const { id_gejala, id_hama, nilai_pakar } = req.body;
 
-    const rule = await Rule_penyakit.findByPk(id);
+    const rule = await Rule_hama.findByPk(id);
     if (!rule) {
       return res.status(404).json({ message: 'Rule tidak ditemukan' });
     }
 
     await rule.update({
       id_gejala,
-      id_penyakit,
+      id_hama,
       nilai_pakar
     });
 
@@ -60,11 +60,11 @@ exports.updateRulePenyakit = async (req, res) => {
 };
 
 // 🔥 Hapus aturan
-exports.deleteRulePenyakit = async (req, res) => {
+exports.deleteRuleHama = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const rule = await Rule_penyakit.findByPk(id);
+    const rule = await Rule_hama.findByPk(id);
     if (!rule) {
       return res.status(404).json({ message: 'Rule tidak ditemukan' });
     }

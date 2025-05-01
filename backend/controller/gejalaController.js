@@ -1,9 +1,11 @@
-const Gejala = require('../models/gejala');
+const {Gejala} = require('../models');
 
 // 🔹 Menampilkan semua data gejala
 exports.getAllGejala = async (req, res) => {
   try {
-    const gejala = await Gejala.findAll();
+    const gejala = await Gejala.findAll({
+      attributes: ['id', 'nama']
+    });
     res.status(200).json(gejala);
   } catch (error) {
     res.status(500).json({ message: 'Terjadi kesalahan', error });

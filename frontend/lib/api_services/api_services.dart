@@ -7,9 +7,15 @@ class ApiService {
   static const String gejalaUrl = 'http://localhost:5000/api/gejala';
   static const String hamaUrl = 'http://localhost:5000/api/hama';
   static const String penyakitUrl = 'http://localhost:5000/api/penyakit';
+  static const String rulesPenyakitUrl =
+      'http://localhost:5000/api/rules_penyakit';
+  static const String rulesHamaUrl = 'http://localhost:5000/api/rules_hama';
 
-  // Fungsi Login (dengan perbaikan)  
-  static Future<Map<String, dynamic>> loginUser(String email, String password) async {
+  // Fungsi Login (dengan perbaikan)
+  static Future<Map<String, dynamic>> loginUser(
+    String email,
+    String password,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse("$baseUrl/login"),
@@ -114,31 +120,38 @@ class ApiService {
 
   // Ambil semua hama
   Future<List<Map<String, dynamic>>> getHama() async {
-  try {
-    final response = await http.get(Uri.parse(ApiService.hamaUrl));
-    
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
+    try {
+      final response = await http.get(Uri.parse(ApiService.hamaUrl));
 
-      // Pastikan "data" ada dan berupa List
-      if (responseData is Map<String, dynamic> && responseData.containsKey("data")) {
-        final List<dynamic> data = responseData["data"];
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
 
-        return List<Map<String, dynamic>>.from(data.map((item) => Map<String, dynamic>.from(item)));
+        // Pastikan "data" ada dan berupa List
+        if (responseData is Map<String, dynamic> &&
+            responseData.containsKey("data")) {
+          final List<dynamic> data = responseData["data"];
+
+          return List<Map<String, dynamic>>.from(
+            data.map((item) => Map<String, dynamic>.from(item)),
+          );
+        } else {
+          throw Exception("Format respons API tidak sesuai");
+        }
       } else {
-        throw Exception("Format respons API tidak sesuai");
+        throw Exception("Gagal mengambil data hama");
       }
-    } else {
+    } catch (e) {
+      print("Error getHama: $e");
       throw Exception("Gagal mengambil data hama");
     }
-  } catch (e) {
-    print("Error getHama: $e");
-    throw Exception("Gagal mengambil data hama");
   }
-}
 
   // Tambah hama baru (kode otomatis)
-  Future<Map<String, dynamic>> createHama(String nama, String deskripsi, String penanganan) async {
+  Future<Map<String, dynamic>> createHama(
+    String nama,
+    String deskripsi,
+    String penanganan,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse(hamaUrl),
@@ -146,7 +159,7 @@ class ApiService {
         body: jsonEncode({
           "nama": nama,
           "deskripsi": deskripsi,
-          "penanganan": penanganan
+          "penanganan": penanganan,
         }),
       );
 
@@ -161,15 +174,21 @@ class ApiService {
     }
   }
 
-// Update hama berdasarkan ID
-  Future<Map<String, dynamic>> updateHama(int id, String nama, String deskripsi, String penanganan) async {
+  // Update hama berdasarkan ID
+  Future<Map<String, dynamic>> updateHama(
+    int id,
+    String nama,
+    String deskripsi,
+    String penanganan,
+  ) async {
     try {
-      final response = await http.put(Uri.parse('$hamaUrl/$id'), 
+      final response = await http.put(
+        Uri.parse('$hamaUrl/$id'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "nama": nama,
           "deskripsi": deskripsi,
-          "penanganan": penanganan
+          "penanganan": penanganan,
         }),
       );
 
@@ -199,39 +218,46 @@ class ApiService {
 
   // Ambil semua penyakit
   Future<List<Map<String, dynamic>>> getPenyakit() async {
-  try {
-    final response = await http.get(Uri.parse(ApiService.penyakitUrl));
-    
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
+    try {
+      final response = await http.get(Uri.parse(ApiService.penyakitUrl));
 
-      // Pastikan "data" ada dan berupa List
-      if (responseData is Map<String, dynamic> && responseData.containsKey("data")) {
-        final List<dynamic> data = responseData["data"];
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
 
-        return List<Map<String, dynamic>>.from(data.map((item) => Map<String, dynamic>.from(item)));
+        // Pastikan "data" ada dan berupa List
+        if (responseData is Map<String, dynamic> &&
+            responseData.containsKey("data")) {
+          final List<dynamic> data = responseData["data"];
+
+          return List<Map<String, dynamic>>.from(
+            data.map((item) => Map<String, dynamic>.from(item)),
+          );
+        } else {
+          throw Exception("Format respons API tidak sesuai");
+        }
       } else {
-        throw Exception("Format respons API tidak sesuai");
+        throw Exception("Gagal mengambil data penyakit");
       }
-    } else {
+    } catch (e) {
+      print("Error getHama: $e");
       throw Exception("Gagal mengambil data penyakit");
     }
-  } catch (e) {
-    print("Error getHama: $e");
-    throw Exception("Gagal mengambil data penyakit");
   }
-}
 
   // Tambah penyakit baru (kode otomatis)
-  Future<Map<String, dynamic>> createPenyakit(String nama, String deskripsi, String penanganan) async {
+  Future<Map<String, dynamic>> createPenyakit(
+    String nama,
+    String deskripsi,
+    String penanganan,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse(penyakitUrl),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "nama": nama,
-          "deskripsi": deskripsi, 
-          "penanganan": penanganan
+          "deskripsi": deskripsi,
+          "penanganan": penanganan,
         }),
       );
 
@@ -246,15 +272,21 @@ class ApiService {
     }
   }
 
-// Update penyakit berdasarkan ID
-  Future<Map<String, dynamic>> updatePenyakit(int id, String nama, String deskripsi, String penanganan) async {
+  // Update penyakit berdasarkan ID
+  Future<Map<String, dynamic>> updatePenyakit(
+    int id,
+    String nama,
+    String deskripsi,
+    String penanganan,
+  ) async {
     try {
-      final response = await http.put(Uri.parse('$penyakitUrl/$id'), 
+      final response = await http.put(
+        Uri.parse('$penyakitUrl/$id'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "nama": nama,
           "deskripsi": deskripsi,
-          "penanganan": penanganan
+          "penanganan": penanganan,
         }),
       );
 
@@ -282,7 +314,7 @@ class ApiService {
     }
   }
 
-  //registrasi 
+  //registrasi
   Future<void> registerUser({
     required String name,
     required String email,
@@ -304,7 +336,9 @@ class ApiService {
     );
 
     if (response.statusCode != 201) {
-      throw Exception(jsonDecode(response.body)['message'] ?? 'Gagal mendaftar');
+      throw Exception(
+        jsonDecode(response.body)['message'] ?? 'Gagal mendaftar',
+      );
     }
   }
 
@@ -323,9 +357,151 @@ class ApiService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception(jsonDecode(response.body)['message'] ?? 'Gagal memperbarui password');
+      throw Exception(
+        jsonDecode(response.body)['message'] ?? 'Gagal memperbarui password',
+      );
     }
   }
 
-}
+  //  Create Rule penyakit
+  static Future<http.Response> createRulePenyakit({
+    required int idGejala,
+    int? idPenyakit,
+    required double nilaiPakar,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$rulesPenyakitUrl'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'id_gejala': idGejala,
+        'id_penyakit': idPenyakit,
+        'nilai_pakar': nilaiPakar,
+      }),
+    );
+    return response;
+  }
 
+  //get all rules penyakit
+  Future<List<dynamic>> getRulesPenyakit() async {
+    final response = await http.get(Uri.parse(rulesPenyakitUrl));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data['data'] == null) {
+        throw Exception('Data rules kosong');
+      }
+
+      return data['data'];
+    } else {
+      throw Exception('Gagal mengambil data rules: ${response.statusCode}');
+    }
+  }
+
+  //  Update Rule penyakit
+  static Future<http.Response> updateRulePenyakit({
+    required int id,
+    required int idGejala,
+    int? idPenyakit,
+    required double nilaiPakar,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$rulesPenyakitUrl/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'id_gejala': idGejala,
+        'id_penyakit': idPenyakit,
+        'nilai_pakar': nilaiPakar,
+      }),
+    );
+    return response;
+  }
+
+  //  Delete Rule penyakit
+  static Future<http.Response> deleteRulePenyakit(int id) async {
+    final response = await http.delete(
+      Uri.parse('$rulesPenyakitUrl/$id'),
+    );
+    return response;
+  }
+
+  //  Create Rule Hama
+  static Future<http.Response> createRuleHama({
+    required int idGejala,
+    int? idHama,
+    required double nilaiPakar,
+  }) async {
+    try {
+      // Mencetak URL untuk debugging
+      print("URL API: $rulesHamaUrl");
+
+      // Kirim request POST ke server
+      final response = await http.post(
+        Uri.parse('$rulesHamaUrl'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'id_gejala': idGejala,
+          'id_hama': idHama,
+          'nilai_pakar': nilaiPakar,
+        }),
+      );
+
+      // Pengecekan status response
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Jika berhasil, kembalikan response
+        return response;
+      } else {
+        // Jika gagal, cetak error dan lempar exception
+        print("Gagal: ${response.statusCode} - ${response.body}");
+        throw Exception('Gagal menyimpan rule hama. ${response.body}');
+      }
+    } catch (e) {
+      print('Error: $e');
+      rethrow; // Rethrow exception agar bisa ditangani di tempat lain
+    }
+  }
+
+  //get all rules hama
+  Future<List<dynamic>> getRulesHama() async {
+    final response = await http.get(Uri.parse(rulesHamaUrl));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data['data'] == null) {
+        throw Exception('Data rules kosong');
+      }
+
+      return data['data'];
+    } else {
+      throw Exception('Gagal mengambil data rules: ${response.statusCode}');
+    }
+  }
+
+  //  Update Rule hama
+  static Future<http.Response> updateRuleHama({
+    required int id,
+    required int idGejala,
+    int? idHama,
+    required double nilaiPakar,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$rulesHamaUrl/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'id_gejala': idGejala,
+        'id_hama': idHama,
+        'nilai_pakar': nilaiPakar,
+      }),
+    );
+    return response;
+  }
+
+  //  Delete Rule hama
+  static Future<http.Response> deleteRuleHama(int id) async {
+    final response = await http.delete(
+      Uri.parse('$rulesHamaUrl/$id'),
+    );
+    return response;
+  }
+}

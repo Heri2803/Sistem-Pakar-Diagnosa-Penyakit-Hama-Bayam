@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Rules_penyakit', {
+    await queryInterface.createTable('Rules_hama', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -11,25 +11,24 @@ module.exports = {
       },
       id_gejala: {
         type: Sequelize.INTEGER,
-        references:{
+        references: {
           model: 'gejala',
           key: 'id'
         }
       },
       nilai_pakar: {
-        type: Sequelize.FLOAT,
-        allowNull: false
+        type: Sequelize.FLOAT
       },
-      id_penyakit: {
+      id_hama: {
         type: Sequelize.INTEGER,
-        references:{
-          model: 'penyakit',
-          key:'id'
+        references: {
+          model: 'hama',  
+          key: 'id'
         }
       },
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Rules_penyakit');
+    await queryInterface.dropTable('Rules_hama');
   }
 };

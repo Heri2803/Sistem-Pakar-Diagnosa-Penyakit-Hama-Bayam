@@ -1,9 +1,11 @@
-const Penyakit = require('../models/penyakit');
+const {Penyakit} = require('../models');
 
 // 🔹 Fungsi untuk mendapatkan semua data penyakit
 exports.getAllPenyakit = async (req, res) => {
   try {
-    const dataPenyakit = await Penyakit.findAll();
+    const dataPenyakit = await Penyakit.findAll({
+      attributes: ['id', 'nama' , 'deskripsi' , 'penanganan']
+    });
     res.status(200).json({ message: 'Data penyakit berhasil diambil', data: dataPenyakit });
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengambil data penyakit', error });
