@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/admin/edit_rule_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/api_services/api_services.dart';
 import 'tambah_rule_page.dart';
+import 'edit_hama_page.dart';
 
 class RulePage extends StatefulWidget {
   const RulePage({Key? key}) : super(key: key);
@@ -241,29 +243,49 @@ class _RulePageState extends State<RulePage> {
                                       color: Colors.orange,
                                     ),
                                     onPressed: () {
-                                      if (rule != null && rule.id != null) {
+                                      if (rule != null &&
+                                          rule['id'] != null &&
+                                          rule['id_gejala'] != null &&
+                                          rule['nilai_pakar'] != null) {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                             builder:
-                                                (context) => TambahRulePage(
+                                                (context) => EditRulePage(
                                                   isEditing: true,
                                                   isEditingHama: true,
-                                                  selectedRuleIds: [rule.id],
+                                                  selectedRuleIds: [
+                                                    rule['id'] as int,
+                                                  ],
                                                   selectedGejalaIds: [
-                                                    rule.idGejala,
+                                                    rule['id_gejala'] as int,
                                                   ],
                                                   nilaiPakarList: [
-                                                    rule.nilaiPakar,
+                                                    (rule['nilai_pakar'] as num)
+                                                        .toDouble(),
                                                   ],
-                                                  selectedHamaId: rule.idHama,
+                                                  selectedHamaId:
+                                                      rule['id_hama']
+                                                          as int?,
+                                                  selectedPenyakitId: rule['id_penyakit'] as int?, // Tambahkan type cast ke int?
                                                 ),
                                           ),
                                         );
                                       } else {
-                                        print(
-                                          'Data rule tidak lengkap atau null',
+                                        // Tampilkan pesan error jika data rule tidak lengkap
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              "Data rule tidak lengkap atau tidak valid",
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
                                         );
+
+                                        // Debug info
+                                        print("Rule data: $rule");
                                       }
                                     },
                                   ),

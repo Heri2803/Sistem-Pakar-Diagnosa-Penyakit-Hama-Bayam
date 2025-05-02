@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:frontend/api_services/api_services.dart';
 import 'package:http/http.dart' as http;
 
-class TambahRulePage extends StatefulWidget {
+class EditRulePage extends StatefulWidget {
   @override
-  _TambahRulePageState createState() => _TambahRulePageState();
+  _EditRulePageState createState() => _EditRulePageState();
 
   final bool isEditing;
   final bool isEditingHama;
@@ -14,7 +14,7 @@ class TambahRulePage extends StatefulWidget {
   final int? selectedHamaId;
   final int? selectedPenyakitId;
 
-  const TambahRulePage({
+  const EditRulePage({
     Key? key,
     required this.isEditing,
     required this.isEditingHama,
@@ -26,12 +26,12 @@ class TambahRulePage extends StatefulWidget {
   }) : super(key: key);
 }
 
-class _TambahRulePageState extends State<TambahRulePage> {
+class _EditRulePageState extends State<EditRulePage> {
   int? selectedHamaId;
   int? selectedPenyakitId;
   List<int?> selectedGejalaIds = [null];
   List<double> nilaiPakarList = [0.5];
-  List<int?> selectedRuleIds = []; // List paralel dengan selectedGejalaIds dan nilaiPakarList
+  List<int?> selectedRuleIds = [];
 
   bool isEditing = true; // atau false jika sedang edit penyakit
 
@@ -44,37 +44,72 @@ class _TambahRulePageState extends State<TambahRulePage> {
   List<Map<String, dynamic>> penyakitList = [];
   List<Map<String, dynamic>> gejalaList = [];
 
-  // void loadRulesForEditing() async {
-  //   try {
-  //     final fetchedRules =
-  //         isEditing ? await api.getRulesHama() : await api.getRulesPenyakit();
-  //     setState(() {
-  //       final validRules =
-  //           fetchedRules
-  //               .where(
-  //                 (rule) =>
-  //                     rule != null &&
-  //                     rule.containsKey('id') &&
-  //                     rule.containsKey('id_gejala') &&
-  //                     rule.containsKey('nilai_pakar') &&
-  //                     rule['id'] != null &&
-  //                     rule['id_gejala'] != null &&
-  //                     rule['nilai_pakar'] != null,
-  //               )
-  //               .toList();
-  //             selectedRuleIds = fetchedRules.map<int>((rule) => rule['id'] ?? 0).toList();
-  //             selectedGejalaIds = validRules.map<int>((rule) => rule['id_gejala']).toList();
-  //             nilaiPakarList = validRules.map<double>((rule) => (rule['nilai_pakar'] as num).toDouble()).toList();
-  //     });
-  //     print('Fetched Rules: $fetchedRules');
-  //     print('First Rule: ${fetchedRules.first}');
-  //   } catch (e) {
-  //     print("Gagal memuat data rule: $e");
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text("Gagal memuat data rule")));
-  //   }
-  // }
+  void loadRulesForEditing() async {
+    try {
+      final fetchedRules =
+          isEditing ? await api.getRulesHama() : await api.getRulesPenyakit();
+
+      print('Fetched Rules: $fetchedRules');
+
+      // Filter data yang valid dan konversi dengan aman
+      final validRules =
+          fetchedRules.where((rule) {
+            if (rule is Map<String, dynamic>) {
+              // Pastikan semua key yang diperlukan ada dan nilainya tidak null
+              return rule.containsKey('id') &&
+                  rule.containsKey('id_gejala') &&
+                  rule.containsKey('nilai_pakar') &&
+                  (rule.containsKey('id_penyakit') ||
+                      rule.containsKey('id_hama')) &&
+                  rule['id'] != null &&
+                  rule['id_gejala'] != null &&
+                  rule['nilai_pakar'] != null &&
+                  (rule['id_penyakit'] != null || rule['id_hama'] != null);
+            }
+            return false;
+          }).toList();
+
+      // Pastikan konversi tipe data dilakukan dengan aman
+      setState(() {
+        selectedRuleIds =
+            validRules.map<int?>((rule) {
+              // Pastikan id bisa dikonversi ke int
+              final id = rule['id'];
+              return id is int ? id : (id is String ? int.tryParse(id) : null);
+            }).toList();
+
+        selectedGejalaIds =
+            validRules.map<int?>((rule) {
+              // Pastikan id_gejala bisa dikonversi ke int
+              final idGejala = rule['id_gejala'];
+              return idGejala is int
+                  ? idGejala
+                  : (idGejala is String ? int.tryParse(idGejala) : null);
+            }).toList();
+
+        nilaiPakarList =
+            validRules.map<double>((rule) {
+              // Pastikan nilai_pakar bisa dikonversi ke double
+              final nilaiPakar = rule['nilai_pakar'];
+              if (nilaiPakar is double) return nilaiPakar;
+              if (nilaiPakar is int) return nilaiPakar.toDouble();
+              if (nilaiPakar is String)
+                return double.tryParse(nilaiPakar) ?? 0.5;
+              return 0.5; // Nilai default
+            }).toList();
+
+        print('Valid Rules: $validRules');
+        print('selectedRuleIds: $selectedRuleIds');
+        print('selectedGejalaIds: $selectedGejalaIds');
+        print('nilaiPakarList: $nilaiPakarList');
+      });
+    } catch (e) {
+      print("Gagal memuat data rule: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal memuat data rule: $e")));
+    }
+  }
 
   // Fungsi untuk fetch data dari API
   Future<void> fetchData() async {
@@ -120,109 +155,81 @@ class _TambahRulePageState extends State<TambahRulePage> {
   void initState() {
     super.initState();
     fetchData(); // Panggil fetchData saat halaman dibuka pertama kali
+
+    // Inisialisasi dari widget parent
+    if (widget.isEditing) {
+      selectedHamaId = widget.selectedHamaId;
+      selectedPenyakitId = widget.selectedPenyakitId;
+
+      // Copy nilai dari widget ke state
+      if (widget.selectedRuleIds.isNotEmpty) {
+        selectedRuleIds = List<int?>.from(widget.selectedRuleIds);
+      }
+      if (widget.selectedGejalaIds.isNotEmpty) {
+        selectedGejalaIds = List<int?>.from(widget.selectedGejalaIds);
+      }
+      if (widget.nilaiPakarList.isNotEmpty) {
+        nilaiPakarList = List<double>.from(widget.nilaiPakarList);
+      }
+    }
   }
 
-  void saveRules() async {
-    if (selectedPenyakitId == null && selectedHamaId == null) {
+  void updateRules() async {
+    if (selectedRuleIds.length != selectedGejalaIds.length ||
+        selectedRuleIds.length != nilaiPakarList.length) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Pilih minimal satu: Penyakit atau Hama")),
+        SnackBar(
+          content: Text("Data rule tidak sinkron. Silakan cek kembali."),
+        ),
       );
       return;
     }
 
     try {
       for (int i = 0; i < selectedGejalaIds.length; i++) {
+        final idRule = selectedRuleIds[i];
         final idGejala = selectedGejalaIds[i];
         final nilai = nilaiPakarList[i];
 
-        if (idGejala != null) {
-          if (selectedPenyakitId != null) {
-            final response = await ApiService.createRulePenyakit(
-              idGejala: idGejala,
-              idPenyakit: selectedPenyakitId,
-              nilaiPakar: nilai,
-            );
+        if (idRule == null || idGejala == null) {
+          print("Lewat karena data null pada index ke-$i");
+          continue;
+        }
 
-            if (response.statusCode != 200 && response.statusCode != 201) {
-              throw Exception("Gagal menyimpan rule penyakit");
-            }
-          } else if (selectedHamaId != null) {
-            final response = await ApiService.createRuleHama(
-              idGejala: idGejala,
-              idHama: selectedHamaId,
-              nilaiPakar: nilai,
-            );
+        http.Response response;
 
-            if (response.statusCode != 200 && response.statusCode != 201) {
-              throw Exception("Gagal menyimpan rule hama");
-            }
-          }
+        if (selectedPenyakitId != null) {
+          response = await ApiService.updateRulePenyakit(
+            id: idRule,
+            idGejala: idGejala,
+            idPenyakit: selectedPenyakitId!,
+            nilaiPakar: nilai,
+          );
+        } else {
+          response = await ApiService.updateRuleHama(
+            id: idRule,
+            idGejala: idGejala,
+            idHama: selectedHamaId!,
+            nilaiPakar: nilai,
+          );
+        }
+
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          throw Exception("Gagal mengupdate rule");
         }
       }
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Data berhasil disimpan")));
-
+      ).showSnackBar(SnackBar(content: Text("Data berhasil diperbarui")));
       Navigator.pop(context);
     } catch (e) {
-      print('Gagal menyimpan data: $e');
+      print('Gagal memperbarui data: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Gagal menyimpan data")));
+      ).showSnackBar(SnackBar(content: Text("Gagal memperbarui data")));
     }
   }
-
-  // void updateRules() async {
-  //   if (selectedPenyakitId == null && selectedHamaId == null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("Pilih minimal satu: Penyakit atau Hama")),
-  //     );
-  //     return;
-  //   }
-
-  //   try {
-  //     for (int i = 0; i < selectedGejalaIds.length; i++) {
-  //       final idRule = selectedRuleIds[i];
-  //       final idGejala = selectedGejalaIds[i];
-  //       final nilai = nilaiPakarList[i];
-
-  //       if (idRule != null && idGejala != null) {
-  //         http.Response response;
-
-  //         if (selectedPenyakitId != null) {
-  //           response = await ApiService.updateRulePenyakit(
-  //             id: idRule,
-  //             idGejala: idGejala,
-  //             idPenyakit: selectedPenyakitId,
-  //             nilaiPakar: nilai,
-  //           );
-  //         } else {
-  //           response = await ApiService.updateRuleHama(
-  //             id: idRule,
-  //             idGejala: idGejala,
-  //             idHama: selectedHamaId,
-  //             nilaiPakar: nilai,
-  //           );
-  //         }
-
-  //         if (response.statusCode != 200 && response.statusCode != 201) {
-  //           throw Exception("Gagal mengupdate rule");
-  //         }
-  //       }
-  //     }
-
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text("Data berhasil diperbarui")));
-  //     Navigator.pop(context);
-  //   } catch (e) {
-  //     print('Gagal memperbarui data: $e');
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text("Gagal memperbarui data")));
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -349,6 +356,14 @@ class _TambahRulePageState extends State<TambahRulePage> {
                                     width: 80,
                                     child: TextField(
                                       keyboardType: TextInputType.number,
+                                      // Gunakan TextEditingController untuk menampilkan nilai awal
+                                      controller: TextEditingController(
+                                        text:
+                                            nilaiPakarList.length > index
+                                                ? nilaiPakarList[index]
+                                                    .toString()
+                                                : "0.5",
+                                      ),
                                       decoration: InputDecoration(
                                         labelText: "Nilai Pakar",
                                         border: OutlineInputBorder(),
@@ -356,8 +371,18 @@ class _TambahRulePageState extends State<TambahRulePage> {
                                       onChanged: (value) {
                                         setState(() {
                                           if (value.isNotEmpty) {
-                                            nilaiPakarList[index] =
-                                                double.tryParse(value) ?? 0.5;
+                                            // Pastikan index ada dalam range
+                                            if (nilaiPakarList.length <=
+                                                index) {
+                                              // Tambahkan nilai baru jika index belum ada
+                                              nilaiPakarList.add(
+                                                double.tryParse(value) ?? 0.5,
+                                              );
+                                            } else {
+                                              // Update nilai jika index sudah ada
+                                              nilaiPakarList[index] =
+                                                  double.tryParse(value) ?? 0.5;
+                                            }
                                           }
                                         });
                                       },
@@ -395,13 +420,13 @@ class _TambahRulePageState extends State<TambahRulePage> {
 
                         SizedBox(height: 20),
 
-                        // Tombol untuk menambah rule
+                        // Tombol untuk edit rule
                         ElevatedButton(
                           onPressed: () {
                             // Panggil fungsi saveRules untuk menyimpan data
-                            saveRules();
+                            updateRules();
                           },
-                          child: Text('Tambah Rule'),
+                          child: Text('Perbarui Rule'),
                         ),
                       ],
                     ),

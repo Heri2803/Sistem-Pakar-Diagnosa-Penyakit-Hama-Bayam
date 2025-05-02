@@ -7,8 +7,7 @@ class ApiService {
   static const String gejalaUrl = 'http://localhost:5000/api/gejala';
   static const String hamaUrl = 'http://localhost:5000/api/hama';
   static const String penyakitUrl = 'http://localhost:5000/api/penyakit';
-  static const String rulesPenyakitUrl =
-      'http://localhost:5000/api/rules_penyakit';
+  static const String rulesPenyakitUrl ='http://localhost:5000/api/rules_penyakit';
   static const String rulesHamaUrl = 'http://localhost:5000/api/rules_hama';
 
   // Fungsi Login (dengan perbaikan)
