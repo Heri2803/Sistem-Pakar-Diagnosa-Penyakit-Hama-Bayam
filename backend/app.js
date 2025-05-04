@@ -20,6 +20,11 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Serve gambar dari folder image_hama
+app.use('/image_hama', express.static(path.join(__dirname, 'image_hama')));
+// Serve gambar dari folder image_penyakit
+app.use('/image_penyakit', express.static(path.join(__dirname, 'image_penyakit')));
+
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);

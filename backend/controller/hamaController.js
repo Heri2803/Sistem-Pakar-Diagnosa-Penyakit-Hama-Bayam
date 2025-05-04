@@ -1,10 +1,12 @@
 const {Hama} = require('../models');
+const path = require('path'); 
+const fs = require('fs');
 
 // 🔹 Fungsi untuk mendapatkan semua data hama
 exports.getAllHama = async (req, res) => {
   try {
     const dataHama = await Hama.findAll({
-      attributes: ['id', 'nama' , 'deskripsi' , 'penanganan']
+      attributes: ['id', 'nama' , 'deskripsi' , 'penanganan', 'foto']
     });
     res.status(200).json({ message: 'Data hama berhasil diambil', data: dataHama });
   } catch (error) {
@@ -17,17 +19,36 @@ exports.getHamaById = async (req, res) => {
   try {
     const { id } = req.params;
     const hama = await Hama.findByPk(id);
-    if (!hama) {
-      return res.status(404).json({ message: 'Hama tidak ditemukan' });
+
+    if (!hama || !hama.foto) {
+      return res.status(404).json({ message: 'Gambar tidak ditemukan' });
     }
-    res.status(200).json({ message: 'Data hama ditemukan', data: hama });
+
+    console.log('Nama file gambar dari database:', hama.foto);
+
+    // Naik 1 level dari 'controller' ke 'backend'
+    const imagePath = path.resolve(__dirname, '..', 'image_hama', hama.foto);
+    console.log('Path absolut file gambar:', imagePath);
+
+    if (!fs.existsSync(imagePath)) {
+      return res.status(404).json({ message: 'File gambar tidak ditemukan di path tersebut' });
+    }
+
+    const ext = path.extname(hama.foto).toLowerCase();
+    let contentType = 'image/jpeg';
+
+    if (ext === '.png') contentType = 'image/png';
+    else if (ext === '.gif') contentType = 'image/gif';
+
+    res.setHeader('Content-Type', contentType);
+    res.sendFile(imagePath);
   } catch (error) {
-    res.status(500).json({ message: 'Gagal mengambil data hama', error });
+    console.error('Error saat mengambil gambar:', error.stack);
+    res.status(500).json({ message: 'Gagal mengambil gambar', error: error.message });
   }
 };
 
 // Pastikan sudah import 'Hama' model dan multer middleware sebelumnya
-
 exports.createHama = async (req, res) => {
   try {
     const { nama, deskripsi, penanganan } = req.body;
@@ -74,7 +95,13 @@ exports.updateHama = async (req, res) => {
       return res.status(404).json({ message: 'Hama tidak ditemukan' });
     }
 
-    await hama.update({ nama, kategori, deskripsi, penanganan });
+     // Ambil nama file jika ada file foto yang diunggah
+     let foto = hama.foto; // default: tetap gunakan yang lama
+     if (req.file) {
+       foto = req.file.filename;
+     }
+
+    await hama.update({ nama, kategori, deskripsi, penanganan, foto });
 
     res.status(200).json({ message: 'Hama berhasil diperbarui', data: hama });
   } catch (error) {

@@ -1,6 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:5000/api/auth';
@@ -9,6 +13,7 @@ class ApiService {
   static const String penyakitUrl = 'http://localhost:5000/api/penyakit';
   static const String rulesPenyakitUrl ='http://localhost:5000/api/rules_penyakit';
   static const String rulesHamaUrl = 'http://localhost:5000/api/rules_hama';
+  static const Duration timeout = Duration(seconds: 15);
 
   // Fungsi Login (dengan perbaikan)
   static Future<Map<String, dynamic>> loginUser(
@@ -118,9 +123,10 @@ class ApiService {
   }
 
   // Ambil semua hama
+  // Get all hama
   Future<List<Map<String, dynamic>>> getHama() async {
     try {
-      final response = await http.get(Uri.parse(ApiService.hamaUrl));
+      final response = await http.get(Uri.parse(hamaUrl)).timeout(timeout);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -137,39 +143,183 @@ class ApiService {
           throw Exception("Format respons API tidak sesuai");
         }
       } else {
-        throw Exception("Gagal mengambil data hama");
+        print('Error response: ${response.statusCode} - ${response.body}');
+        throw Exception("Gagal mengambil data hama (Status: ${response.statusCode})");
       }
     } catch (e) {
       print("Error getHama: $e");
-      throw Exception("Gagal mengambil data hama");
+      throw Exception("Gagal mengambil data hama: $e");
     }
   }
+
+  Future<Map<String, dynamic>> getHamaById(int id) async {
+    try {
+      final response = await http.get(Uri.parse('$hamaUrl/$id'));
+      print('Fetching hama with ID $id from $hamaUrl/$id');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print('Response data: $responseData');
+
+        // Periksa format respons
+        if (responseData is Map<String, dynamic> &&
+            responseData.containsKey("data")) {
+          final data = responseData["data"];
+          return Map<String, dynamic>.from(data);
+        } else if (responseData is Map<String, dynamic>) {
+          // Jika langsung mengembalikan objek tanpa wrapper "data"
+          return responseData;
+        } else {
+          throw Exception("Format respons API tidak sesuai");
+        }
+      } else {
+        print('Error response: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          "Gagal mengambil data hama dengan ID $id (Status: ${response.statusCode})",
+        );
+      }
+    } catch (e) {
+      print("Error getHamaById: $e");
+      throw Exception("Gagal mengambil data hama dengan ID $id: $e");
+    }
+  }
+
+  // Fungsi untuk mendapatkan URL gambar hama
+  String getHamaImageUrl(int id) {
+    return '$hamaUrl/$id/image';
+  }
+
+  // Fungsi untuk mengecek apakah gambar tersedia
+  Future<bool> isHamaImageAvailable(int id) async {
+    try {
+      final url = Uri.parse(getHamaImageUrl(id));
+      print('Checking image availability: $url');
+      final response = await http.head(url);
+      print('Image availability status: ${response.statusCode}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Error checking image availability: $e");
+      return false;
+    }
+  }
+
+  // Fungsi untuk mengambil gambar hama sebagai bytes
+  Future<Uint8List?> getHamaImageBytes(int id) async {
+    try {
+      final url = Uri.parse(getHamaImageUrl(id));
+      print('Fetching image bytes from: $url');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        print('Failed to get image bytes: ${response.statusCode}');
+        print(
+          'Response body: ${response.body}',
+        ); // Tambahkan ini untuk melihat pesan error
+        return null;
+      }
+    } catch (e) {
+      print('Error getting image bytes: $e');
+      return null;
+    }
+  }
+
+  Future<Uint8List?> getHamaImageBytesByFilename(String filename) async {
+  try {
+    final url = Uri.parse('http://localhost:5000/image_hama/$filename');
+    print('Fetching image from: $url');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      print('Failed to fetch image. Status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      return null;
+    }
+  } catch (e) {
+    print('Error fetching image by filename: $e');
+    return null;
+  }
+}
+
 
   // Tambah hama baru (kode otomatis)
   Future<Map<String, dynamic>> createHama(
     String nama,
     String deskripsi,
     String penanganan,
+    XFile? pickedFile,
   ) async {
     try {
-      final response = await http.post(
-        Uri.parse(hamaUrl),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "nama": nama,
-          "deskripsi": deskripsi,
-          "penanganan": penanganan,
-        }),
-      );
+      var uri = Uri.parse(hamaUrl);
+      var request = http.MultipartRequest('POST', uri);
+
+      request.fields['nama'] = nama;
+      request.fields['deskripsi'] = deskripsi;
+      request.fields['penanganan'] = penanganan;
+
+      print('Mengirim request ke: $uri');
+      print('Dengan fields: ${request.fields}');
+
+      if (pickedFile != null) {
+        String mimeType = 'image/jpeg';
+        String fileName = pickedFile.name;
+
+        if (fileName.isEmpty) {
+          fileName = pickedFile.path.split('/').last;
+        }
+
+        if (fileName.toLowerCase().endsWith('.png')) {
+          mimeType = 'image/png';
+        } else if (fileName.toLowerCase().endsWith('.jpg') ||
+            fileName.toLowerCase().endsWith('.jpeg')) {
+          mimeType = 'image/jpeg';
+        }
+
+        final bytes = await pickedFile.readAsBytes();
+
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'foto', // Sesuaikan dengan field name yang diterima backend
+            bytes,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+
+        print('Menambahkan file: $fileName (${bytes.length} bytes)');
+      } else {
+        print('Tidak ada file yang dilampirkan');
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      print('Status response: ${response.statusCode}');
+      print('Body response: ${response.body}');
 
       if (response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Gagal menambahkan hama');
+        String errorMessage =
+            'Gagal menambahkan hama (kode: ${response.statusCode})';
+        try {
+          var errorBody = jsonDecode(response.body);
+          if (errorBody is Map && errorBody.containsKey('message')) {
+            errorMessage = errorBody['message'];
+          }
+        } catch (e) {
+          if (response.body.isNotEmpty) {
+            errorMessage = response.body;
+          }
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      print('Error createHama: $e');
-      throw Exception('Gagal menambahkan hama');
+      print('Error dalam createHama: $e');
+      throw Exception('Gagal menambahkan hama: $e');
     }
   }
 
@@ -179,26 +329,85 @@ class ApiService {
     String nama,
     String deskripsi,
     String penanganan,
+    XFile? pickedFile,
   ) async {
     try {
-      final response = await http.put(
-        Uri.parse('$hamaUrl/$id'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "nama": nama,
-          "deskripsi": deskripsi,
-          "penanganan": penanganan,
-        }),
-      );
+      var uri = Uri.parse('$hamaUrl/$id');
+      var request = http.MultipartRequest('PUT', uri);
+
+      // Tambahkan fields untuk data teks
+      request.fields['nama'] = nama;
+      request.fields['deskripsi'] = deskripsi;
+      request.fields['penanganan'] = penanganan;
+
+      // Log untuk debugging
+      print('Mengirim request ke: $uri');
+      print('Dengan fields: ${request.fields}');
+
+      if (pickedFile != null) {
+        // Dapatkan tipe MIME berdasarkan ekstensi file
+        String mimeType = 'image/jpeg'; // Default
+        String fileName = pickedFile.name;
+
+        if (fileName.isEmpty) {
+          fileName = pickedFile.path.split('/').last;
+        }
+
+        if (fileName.toLowerCase().endsWith('.png')) {
+          mimeType = 'image/png';
+        } else if (fileName.toLowerCase().endsWith('.jpg') ||
+            fileName.toLowerCase().endsWith('.jpeg')) {
+          mimeType = 'image/jpeg';
+        }
+
+        // Baca file sebagai bytes
+        final bytes = await pickedFile.readAsBytes();
+
+        // Tambahkan file ke request dengan tipe yang tepat
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'foto', // Nama field ini harus sama dengan yang diharapkan backend
+            bytes,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+
+        print('Menambahkan file: $fileName (${bytes.length} bytes)');
+      } else {
+        print('Tidak ada file yang dilampirkan');
+      }
+
+      // Kirim request
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      // Debug response
+      print('Status response: ${response.statusCode}');
+      print('Body response: ${response.body}');
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Gagal mengupdate hama');
+        // Coba ambil pesan error dari response body
+        String errorMessage =
+            'Gagal mengupdate hama (kode: ${response.statusCode})';
+        try {
+          var errorBody = jsonDecode(response.body);
+          if (errorBody is Map && errorBody.containsKey('message')) {
+            errorMessage = errorBody['message'];
+          }
+        } catch (e) {
+          // Jika gagal parse JSON, gunakan response body langsung
+          if (response.body.isNotEmpty) {
+            errorMessage = response.body;
+          }
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      print('Error updateHama: $e');
-      throw Exception('Gagal mengupdate hama');
+      print('Error dalam updateHama: $e');
+      throw Exception('Gagal mengupdate hama: $e');
     }
   }
 
@@ -243,60 +452,241 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getPenyakitById(int id) async {
+    try {
+      final response = await http.get(Uri.parse('$penyakitUrl/$id'));
+      print('Fetching penyakit with ID $id from $penyakitUrl/$id');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print('Response data: $responseData');
+
+        // Periksa format respons
+        if (responseData is Map<String, dynamic> &&
+            responseData.containsKey("data")) {
+          final data = responseData["data"];
+          return Map<String, dynamic>.from(data);
+        } else if (responseData is Map<String, dynamic>) {
+          // Jika langsung mengembalikan objek tanpa wrapper "data"
+          return responseData;
+        } else {
+          throw Exception("Format respons API tidak sesuai");
+        }
+      } else {
+        print('Error response: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          "Gagal mengambil data penyakit dengan ID $id (Status: ${response.statusCode})",
+        );
+      }
+    } catch (e) {
+      print("Error getPenyakitById: $e");
+      throw Exception("Gagal mengambil data penyakit dengan ID $id: $e");
+    }
+  }
+
+   // Fungsi untuk mendapatkan URL gambar penyakit
+  String getPenyakitImageUrl(int id) {
+    return '$penyakitUrl/$id/image';
+  }
+
+  // Fungsi untuk mengecek apakah gambar tersedia
+  Future<bool> isPenyakitImageAvailable(int id) async {
+    try {
+      final url = Uri.parse(getHamaImageUrl(id));
+      print('Checking image availability: $url');
+      final response = await http.head(url);
+      print('Image availability status: ${response.statusCode}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Error checking image availability: $e");
+      return false;
+    }
+  }
+
+  Future<Uint8List?> getPenyakitImageBytes(int id) async {
+    try {
+      final url = Uri.parse(getPenyakitImageUrl(id));
+      print('Fetching image bytes from: $url');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        print('Failed to get image bytes: ${response.statusCode}');
+        print(
+          'Response body: ${response.body}',
+        ); // Tambahkan ini untuk melihat pesan error
+        return null;
+      }
+    } catch (e) {
+      print('Error getting image bytes: $e');
+      return null;
+    }
+  }
+
   // Tambah penyakit baru (kode otomatis)
   Future<Map<String, dynamic>> createPenyakit(
     String nama,
     String deskripsi,
     String penanganan,
+    XFile? pickedFile,
   ) async {
     try {
-      final response = await http.post(
-        Uri.parse(penyakitUrl),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "nama": nama,
-          "deskripsi": deskripsi,
-          "penanganan": penanganan,
-        }),
-      );
+      var uri = Uri.parse(penyakitUrl);
+      var request = http.MultipartRequest('POST', uri);
+
+      request.fields['nama'] = nama;
+      request.fields['deskripsi'] = deskripsi;
+      request.fields['penanganan'] = penanganan;
+
+      print('Mengirim request ke: $uri');
+      print('Dengan fields: ${request.fields}');
+
+      if (pickedFile != null) {
+        String mimeType = 'image/jpeg';
+        String fileName = pickedFile.name;
+
+        if (fileName.isEmpty) {
+          fileName = pickedFile.path.split('/').last;
+        }
+
+        if (fileName.toLowerCase().endsWith('.png')) {
+          mimeType = 'image/png';
+        } else if (fileName.toLowerCase().endsWith('.jpg') ||
+            fileName.toLowerCase().endsWith('.jpeg')) {
+          mimeType = 'image/jpeg';
+        }
+
+        final bytes = await pickedFile.readAsBytes();
+
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'foto', // Sesuaikan dengan field name yang diterima backend
+            bytes,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+
+        print('Menambahkan file: $fileName (${bytes.length} bytes)');
+      } else {
+        print('Tidak ada file yang dilampirkan');
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      print('Status response: ${response.statusCode}');
+      print('Body response: ${response.body}');
 
       if (response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Gagal menambahkan penyakit');
+        String errorMessage =
+            'Gagal menambahkan penyakit (kode: ${response.statusCode})';
+        try {
+          var errorBody = jsonDecode(response.body);
+          if (errorBody is Map && errorBody.containsKey('message')) {
+            errorMessage = errorBody['message'];
+          }
+        } catch (e) {
+          if (response.body.isNotEmpty) {
+            errorMessage = response.body;
+          }
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      print('Error createPenyakit: $e');
-      throw Exception('Gagal menambahkan penyakit');
+      print('Error dalam createPenyakit: $e');
+      throw Exception('Gagal menambahkan penyakit: $e');
     }
   }
 
   // Update penyakit berdasarkan ID
   Future<Map<String, dynamic>> updatePenyakit(
-    int id,
+   int id,
     String nama,
     String deskripsi,
     String penanganan,
+    XFile? pickedFile,
   ) async {
     try {
-      final response = await http.put(
-        Uri.parse('$penyakitUrl/$id'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "nama": nama,
-          "deskripsi": deskripsi,
-          "penanganan": penanganan,
-        }),
-      );
+      var uri = Uri.parse('$penyakitUrl/$id');
+      var request = http.MultipartRequest('PUT', uri);
+
+      // Tambahkan fields untuk data teks
+      request.fields['nama'] = nama;
+      request.fields['deskripsi'] = deskripsi;
+      request.fields['penanganan'] = penanganan;
+
+      // Log untuk debugging
+      print('Mengirim request ke: $uri');
+      print('Dengan fields: ${request.fields}');
+
+      if (pickedFile != null) {
+        // Dapatkan tipe MIME berdasarkan ekstensi file
+        String mimeType = 'image/jpeg'; // Default
+        String fileName = pickedFile.name;
+
+        if (fileName.isEmpty) {
+          fileName = pickedFile.path.split('/').last;
+        }
+
+        if (fileName.toLowerCase().endsWith('.png')) {
+          mimeType = 'image/png';
+        } else if (fileName.toLowerCase().endsWith('.jpg') ||
+            fileName.toLowerCase().endsWith('.jpeg')) {
+          mimeType = 'image/jpeg';
+        }
+
+        // Baca file sebagai bytes
+        final bytes = await pickedFile.readAsBytes();
+
+        // Tambahkan file ke request dengan tipe yang tepat
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'foto', // Nama field ini harus sama dengan yang diharapkan backend
+            bytes,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+
+        print('Menambahkan file: $fileName (${bytes.length} bytes)');
+      } else {
+        print('Tidak ada file yang dilampirkan');
+      }
+
+      // Kirim request
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      // Debug response
+      print('Status response: ${response.statusCode}');
+      print('Body response: ${response.body}');
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Gagal mengupdate penyakit');
+        // Coba ambil pesan error dari response body
+        String errorMessage =
+            'Gagal mengupdate hama (kode: ${response.statusCode})';
+        try {
+          var errorBody = jsonDecode(response.body);
+          if (errorBody is Map && errorBody.containsKey('message')) {
+            errorMessage = errorBody['message'];
+          }
+        } catch (e) {
+          // Jika gagal parse JSON, gunakan response body langsung
+          if (response.body.isNotEmpty) {
+            errorMessage = response.body;
+          }
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      print('Error updatePenyakit: $e');
-      throw Exception('Gagal mengupdate penyakit');
+      print('Error dalam updateHama: $e');
+      throw Exception('Gagal mengupdate hama: $e');
     }
   }
 
@@ -418,9 +808,7 @@ class ApiService {
 
   //  Delete Rule penyakit
   static Future<http.Response> deleteRulePenyakit(int id) async {
-    final response = await http.delete(
-      Uri.parse('$rulesPenyakitUrl/$id'),
-    );
+    final response = await http.delete(Uri.parse('$rulesPenyakitUrl/$id'));
     return response;
   }
 
@@ -498,9 +886,7 @@ class ApiService {
 
   //  Delete Rule hama
   static Future<http.Response> deleteRuleHama(int id) async {
-    final response = await http.delete(
-      Uri.parse('$rulesHamaUrl/$id'),
-    );
+    final response = await http.delete(Uri.parse('$rulesHamaUrl/$id'));
     return response;
   }
 }

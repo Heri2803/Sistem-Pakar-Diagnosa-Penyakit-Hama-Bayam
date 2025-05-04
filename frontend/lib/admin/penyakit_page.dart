@@ -174,6 +174,8 @@ class _PenyakitPageState extends State<PenyakitPage> {
                                                     penyakit['deskripsi'] ?? '',
                                                 penangananAwal:
                                                     penyakit['penanganan'] ?? '',
+                                                gambarUrl: 
+                                                    penyakit['foto'] ?? '',
                                                 onPenyakitUpdated:
                                                     _fetchPenyakit, // fungsi untuk refresh list setelah update
                                               ),

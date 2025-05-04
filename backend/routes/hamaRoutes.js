@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const hamaController = require('../controller/hamaController');
+const uploadHamaGambar = require('../middleware/uploadHamaGambar');
+const multer = require('multer');
 
 /**
  * @swagger
@@ -38,32 +40,43 @@ router.get('/', hamaController.getAllHama);
  *       404:
  *         description: Hama tidak ditemukan
  */
-router.get('/:id', hamaController.getHamaById);
+router.get('/:id/image', hamaController.getHamaById);
 
 /**
  * @swagger
  * /api/hama:
  *   post:
- *     summary: Tambahkan data hama baru
+ *     summary: Tambahkan data hama baru dengan foto
  *     tags: [Hama]
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
  *               nama:
  *                 type: string
+ *                 description: Nama hama
  *               deskripsi:
  *                 type: string
+ *                 description: Deskripsi tentang hama
  *               penanganan:
  *                 type: string
+ *                 description: Cara penanganan hama
+ *               foto:
+ *                 type: string
+ *                 format: binary
+ *                 description: Foto hama (JPG, JPEG, PNG, GIF)
  *     responses:
  *       201:
  *         description: Hama berhasil ditambahkan
+ *       400:
+ *         description: Format file tidak valid atau data tidak lengkap
+ *       500:
+ *         description: Server error
  */
-router.post('/', hamaController.createHama);
+router.post('/', uploadHamaGambar.single('foto'), hamaController.createHama);
 
 /**
  * @swagger
@@ -79,23 +92,24 @@ router.post('/', hamaController.createHama);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
  *               nama:
  *                 type: string
- *               kategori:
- *                 type: string
  *               deskripsi:
  *                 type: string
  *               penanganan:
  *                 type: string
+ *               foto:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: Hama berhasil diperbarui
  */
-router.put('/:id', hamaController.updateHama);
+router.put('/:id', uploadHamaGambar.single('foto'), hamaController.updateHama);
 
 /**
  * @swagger
@@ -113,5 +127,22 @@ router.put('/:id', hamaController.updateHama);
  *         description: Hama berhasil dihapus
  */
 router.delete('/:id', hamaController.deleteHama);
+
+// Error handler untuk multer - letakkan SETELAH semua definisi rute
+router.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Error saat upload file', 
+        error: err.message 
+      });
+    } else if (err) {
+      return res.status(400).json({ 
+        success: false, 
+        message: err.message 
+      });
+    }
+    next();
+  });
 
 module.exports = router;

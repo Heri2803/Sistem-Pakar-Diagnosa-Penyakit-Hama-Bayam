@@ -13,7 +13,21 @@ class _HamaPageState extends State<HamaPage> {
   @override
   void initState() {
     super.initState();
-    _hamaListFuture = ApiService().getHama();
+    _hamaListFuture = _fetchHamaData();
+  }
+  
+  // Fungsi untuk mengambil dan memproses data hama
+  Future<List<Map<String, dynamic>>> _fetchHamaData() async {
+    try {
+      // Mengambil data dari API
+      final hamaList = await ApiService().getHama();
+      
+      // Data sudah lengkap dengan URL foto dari backend
+      return hamaList;
+    } catch (e) {
+      print('Error fetching hama data: $e');
+      throw e;
+    }
   }
 
   @override
@@ -54,24 +68,64 @@ class _HamaPageState extends State<HamaPage> {
               return ListView.builder(
                 itemCount: hamaList.length,
                 itemBuilder: (context, index) {
-                  final diagnosa = hamaList[index];
+                  final hama = hamaList[index];
                   return Card(
                     elevation: 4,
                     margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: ListTile(
-                      title: Text(
-                        diagnosa["nama"] ?? "Tidak ada data",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(diagnosa["deskripsi"] ?? "Deskripsi tidak tersedia"),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    child: InkWell(
                       onTap: () {
+                        // Navigasi ke halaman detail dengan ID dan data awal
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => DetailHamaPage(detailHama: diagnosa),
+                            builder: (context) => DetailHamaPage(
+                              detailHama: hama,
+                              hamaId: hama["id"], // Kirim ID untuk fetch data detil
+                            ),
                           ),
                         );
                       },
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Informasi hama
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    hama["nama"] ?? "Tidak ada data",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    hama["deskripsi"] ?? "Deskripsi tidak tersedia",
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Icon panah ke kanan
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   );
                 },

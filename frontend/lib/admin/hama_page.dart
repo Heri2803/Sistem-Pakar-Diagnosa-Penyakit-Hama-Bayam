@@ -295,6 +295,7 @@ class _HamaPageState extends State<HamaPage> {
                                                     hama['deskripsi'] ?? '',
                                                 penangananAwal:
                                                     hama['penanganan'] ?? '',
+                                                gambarUrl: hama['foto'] ?? '',
                                                 onHamaUpdated:
                                                     _fetchHama, // fungsi untuk refresh list setelah update
                                               ),

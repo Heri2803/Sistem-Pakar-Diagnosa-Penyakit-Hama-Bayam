@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/api_services/api_services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io'; // untuk File
+import 'package:image_picker/image_picker.dart'; // untuk ImagePicker & ImageSource
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
+
 
 class TambahHamaPage extends StatefulWidget {
   final VoidCallback onHamaAdded;
@@ -15,6 +20,12 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
   final TextEditingController deskripsiController = TextEditingController();
   final TextEditingController penangananController = TextEditingController();
   final ApiService apiService = ApiService();
+  final ImagePicker _picker = ImagePicker();
+  File? _imageFile;
+  String? _gambarUrl;
+  // Untuk web
+  Uint8List? _webImage;
+  XFile? _pickedFile;
 
   @override
   void dispose() {
@@ -33,6 +44,7 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
           namaController.text,
           deskripsiController.text,
           penangananController.text,
+          _pickedFile,         
         );
         widget.onHamaAdded();
         Navigator.pop(context);
@@ -60,6 +72,29 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      _pickedFile = pickedFile;
+      print('Gambar dipilih: ${pickedFile.path}');
+      
+      // Baca file sebagai bytes untuk ditampilkan di web
+      final bytes = await pickedFile.readAsBytes();
+      
+      setState(() {
+        // Simpan data gambar sebagai bytes untuk ditampilkan
+        _webImage = bytes;
+        
+        // Jika bukan di web, buat File object (untuk Android/iOS)
+        if (!kIsWeb) {
+          _imageFile = File(pickedFile.path);
+        }
+      });
+    } else {
+      print('Tidak ada gambar dipilih');
+    }
   }
 
   @override
@@ -101,6 +136,30 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
                           maxLines: 3,
                         ),
                         SizedBox(height: 15),
+                        Text('Foto'),
+                    (_webImage != null)
+                        ? Image.memory(
+                          _webImage!,
+                          height: 150,
+                          errorBuilder: (context, error, stackTrace) {
+                            print('Error displaying image: $error');
+                            return Text('Gagal memuat gambar');
+                          },
+                        )
+                        : (_gambarUrl != null && _gambarUrl!.isNotEmpty)
+                        ? Image.network(
+                          _gambarUrl!,
+                          height: 150,
+                          errorBuilder: (context, error, stackTrace) {
+                            print('Error loading network image: $error');
+                            return Text('Gagal memuat gambar dari server');
+                          },
+                        )
+                        : Text('Tidak ada gambar tersedia'),
+                        TextButton(
+                      onPressed: _pickImage,
+                      child: Text('Pilih Gambar'),
+                    ),
                       ],
                     ),
                   ),
