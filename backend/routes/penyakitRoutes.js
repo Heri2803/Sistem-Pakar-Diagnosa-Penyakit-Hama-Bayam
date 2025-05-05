@@ -69,6 +69,9 @@ router.get('/:id/image', penyakitController.getPenyakitById);
  *                 type: string
  *                 format: binary
  *                 description: Foto penyakit (JPG, JPEG, PNG, GIF)
+ *               nilai_pakar:
+ *                 type: number
+ *                 format: float
  *     responses:
  *       201:
  *         description: Hama berhasil ditambahkan
@@ -106,6 +109,9 @@ router.post('/', uploadPenyakitGambar.single('foto'), penyakitController.createP
  *               foto:
  *                 type: string
  *                 format: binary
+ *               nilai_pakar:
+ *                 type: number
+ *                 format: float
  *     responses:
  *       200:
  *         description: penyakit berhasil diperbarui

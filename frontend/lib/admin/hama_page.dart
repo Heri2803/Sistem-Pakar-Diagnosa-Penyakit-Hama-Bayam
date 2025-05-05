@@ -67,128 +67,6 @@ class _HamaPageState extends State<HamaPage> {
     );
   }
 
-  // void _tambahHama() {
-  //   TextEditingController namaController = TextEditingController();
-  //   TextEditingController penangananController = TextEditingController();
-  //   TextEditingController deskripsiController = TextEditingController();
-
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) {
-  //       return AlertDialog(
-  //         title: Text('Tambah Hama Baru'),
-  //         content: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             TextField(
-  //               controller: namaController,
-  //               decoration: InputDecoration(labelText: 'Nama'),
-  //             ),
-  //             TextField(
-  //               controller: deskripsiController,
-  //               decoration: InputDecoration(labelText: 'Deskripsi'),
-  //             ),
-  //             TextField(
-  //               controller: penangananController,
-  //               decoration: InputDecoration(labelText: 'Penanganan'),
-  //             ),
-  //           ],
-  //         ),
-  //         actions: [
-  //           TextButton(
-  //             onPressed: () => Navigator.pop(context),
-  //             child: Text('Batal', style: TextStyle(color: Colors.black)),
-  //           ),
-  //           ElevatedButton(
-  //             onPressed: () async {
-  //               if (namaController.text.isNotEmpty &&
-  //                   deskripsiController.text.isNotEmpty &&
-  //                   penangananController.text.isNotEmpty) {
-  //                 try {
-  //                   await apiService.createHama(
-  //                     namaController.text,
-  //                     deskripsiController.text,
-  //                     penangananController.text,
-  //                   );
-  //                   _fetchHama();
-  //                   Navigator.pop(context);
-  //                 } catch (e) {
-  //                   print("Error adding hama: $e");
-  //                 }
-  //               }
-  //             },
-  //             child: Text('Simpan', style: TextStyle(color: Colors.black)),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   ).then((_) {
-  //     namaController.dispose();
-  //     deskripsiController.dispose();
-  //     penangananController.dispose();
-  //   });
-  // }
-
-  // void showEditDialog(BuildContext context, Map<String, dynamic> hama) {
-  //   final TextEditingController editNamaController = TextEditingController(
-  //     text: hama['nama'] ?? '',
-  //   );
-  //   final TextEditingController editDeskripsiController = TextEditingController(
-  //     text: hama['deskripsi'] ?? '',
-  //   );
-  //   final TextEditingController editPenangananController =
-  //       TextEditingController(text: hama['penanganan'] ?? '');
-
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) {
-  //       return AlertDialog(
-  //         title: Text('Edit Hama'),
-  //         content: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             TextField(
-  //               controller: editNamaController,
-  //               decoration: InputDecoration(labelText: 'Nama'),
-  //             ),
-  //             TextField(
-  //               controller: editDeskripsiController,
-  //               decoration: InputDecoration(labelText: 'Deskripsi'),
-  //             ),
-  //             TextField(
-  //               controller: editPenangananController,
-  //               decoration: InputDecoration(labelText: 'Penanganan'),
-  //             ),
-  //           ],
-  //         ),
-  //         actions: [
-  //           TextButton(
-  //             onPressed: () => Navigator.pop(context),
-  //             child: Text('Batal'),
-  //           ),
-  //           ElevatedButton(
-  //             onPressed: () async {
-  //               try {
-  //                 await apiService.updateHama(
-  //                   hama['id'],
-  //                   editNamaController.text,
-  //                   editDeskripsiController.text,
-  //                   editPenangananController.text,
-  //                 );
-  //                 _fetchHama();
-  //                 Navigator.pop(context);
-  //               } catch (e) {
-  //                 print("Error updating hama: $e");
-  //               }
-  //             },
-  //             child: Text('Simpan', style: TextStyle(color: Colors.black)),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
-
   //pagination
   int currentPage = 0;
   int rowsPerPage = 10;
@@ -283,6 +161,38 @@ class _HamaPageState extends State<HamaPage> {
                                       color: Color(0xFF9DC08D),
                                     ),
                                     onPressed: () {
+                                      // Parse nilai_pakar dengan aman
+                                      double nilaiPakar = 0.0;
+                                      if (hama['nilai_pakar'] != null) {
+                                        // Coba parse jika string
+                                        if (hama['nilai_pakar'] is String) {
+                                          try {
+                                            String nilaiStr =
+                                                hama['nilai_pakar']
+                                                    .toString()
+                                                    .trim();
+                                            if (nilaiStr.isNotEmpty) {
+                                              nilaiPakar = double.parse(
+                                                nilaiStr.replaceAll(',', '.'),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            print(
+                                              "Error parsing nilai_pakar: $e",
+                                            );
+                                          }
+                                        }
+                                        // Langsung gunakan jika sudah double
+                                        else if (hama['nilai_pakar']
+                                            is double) {
+                                          nilaiPakar = hama['nilai_pakar'];
+                                        }
+                                        // Jika int, konversi ke double
+                                        else if (hama['nilai_pakar'] is int) {
+                                          nilaiPakar =
+                                              hama['nilai_pakar'].toDouble();
+                                        }
+                                      }
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -296,6 +206,7 @@ class _HamaPageState extends State<HamaPage> {
                                                 penangananAwal:
                                                     hama['penanganan'] ?? '',
                                                 gambarUrl: hama['foto'] ?? '',
+                                                nilai_pakar: nilaiPakar,
                                                 onHamaUpdated:
                                                     _fetchHama, // fungsi untuk refresh list setelah update
                                               ),

@@ -57,23 +57,40 @@ class _DetailHamaPageState extends State<DetailHamaPage> {
   // Widget untuk menampilkan gambar dengan penanganan error yang lebih baik
   Widget _buildImageWidget(String? filename) {
     if (filename == null || filename.isEmpty) {
-      return Text("Tidak ada gambar tersedia");
+      return _buildPlaceholderImage(
+        "Tidak ada gambar tersedia",
+        Icons.image_not_supported,
+      );
     }
 
     return FutureBuilder<Uint8List?>(
       future: ApiService().getHamaImageBytesByFilename(filename),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
+          return SizedBox(
+            height: 200,
+            width: double.infinity,
+            child: Center(child: CircularProgressIndicator()),
+          );
         } else if (snapshot.hasError || snapshot.data == null) {
-          return Text("Gagal memuat gambar");
+          return _buildPlaceholderImage(
+            "Gagal memuat gambar",
+            Icons.broken_image,
+          );
         } else {
-          return Image.memory(snapshot.data!, fit: BoxFit.cover);
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(
+              snapshot.data!,
+              height: 200,
+              width: double.infinity,
+              fit: BoxFit.contain, // untuk memastikan proporsional & penuh
+            ),
+          );
         }
       },
     );
-}
-
+  }
 
   // Widget untuk placeholder gambar
   Widget _buildPlaceholderImage(String message, IconData icon) {

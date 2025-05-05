@@ -6,7 +6,7 @@ const fs = require('fs');
 exports.getAllPenyakit = async (req, res) => {
   try {
     const dataPenyakit = await Penyakit.findAll({
-      attributes: ['id', 'nama' , 'deskripsi' , 'penanganan' , 'foto']
+      attributes: ['id', 'nama' , 'deskripsi' , 'penanganan' , 'foto', 'kode', 'nilai_pakar']
     });
     res.status(200).json({ message: 'Data penyakit berhasil diambil', data: dataPenyakit });
   } catch (error) {
@@ -50,7 +50,7 @@ exports.getPenyakitById = async (req, res) => {
 // 🔹 Fungsi untuk menambahkan penyakit baru (kode otomatis & kategori default)
 exports.createPenyakit = async (req, res) => {
   try {
-    const { nama, deskripsi, penanganan } = req.body;
+    const { nama, deskripsi, penanganan, nilai_pakar } = req.body;
     const file = req.file; 
 
     // Cek kode terakhir
@@ -74,6 +74,7 @@ exports.createPenyakit = async (req, res) => {
       deskripsi,
       penanganan,
       foto: fotoPath,
+      nilai_pakar
     });
 
     res.status(201).json({ message: 'Penyakit berhasil ditambahkan', data: newPenyakit });
@@ -86,7 +87,7 @@ exports.createPenyakit = async (req, res) => {
 exports.updatePenyakit = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nama, kategori, deskripsi, penanganan } = req.body;
+    const { nama, kategori, deskripsi, penanganan, nilai_pakar } = req.body;
 
     const penyakit = await Penyakit.findByPk(id);
     if (!penyakit) {
@@ -99,7 +100,7 @@ exports.updatePenyakit = async (req, res) => {
       foto = req.file.filename;
     }
 
-    await penyakit.update({ nama, kategori, deskripsi, penanganan, foto });
+    await penyakit.update({ nama, kategori, deskripsi, penanganan, foto, nilai_pakar });
 
     res.status(200).json({ message: 'Penyakit berhasil diperbarui', data: penyakit });
   } catch (error) {

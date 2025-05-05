@@ -68,7 +68,7 @@ class _PenyakitPageState extends State<PenyakitPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => DetailPenyakitPage(detailPenyakit: penyakit),
+                            builder: (context) => DetailPenyakitPage(DetailPenyakit: penyakit),
                           ),
                         );
                       },

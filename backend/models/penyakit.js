@@ -31,6 +31,10 @@ module.exports =(sequelize) => {
         foto: {
           type: DataTypes.STRING,
           allowNull: false,
+        },
+        nilai_pakar: {
+          type: DataTypes.FLOAT,
+          allowNull: true
         }
       },
       {

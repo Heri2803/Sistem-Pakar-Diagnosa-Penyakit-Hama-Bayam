@@ -13,6 +13,8 @@ class TambahRulePage extends StatefulWidget {
   final List<double> nilaiPakarList;
   final int? selectedHamaId;
   final int? selectedPenyakitId;
+  final bool showHamaOnly; // Tambahkan ini
+  final bool showPenyakitOnly;
 
   const TambahRulePage({
     Key? key,
@@ -23,6 +25,8 @@ class TambahRulePage extends StatefulWidget {
     required this.nilaiPakarList,
     this.selectedHamaId,
     this.selectedPenyakitId,
+    this.showHamaOnly = false, // Tambahkan default value
+    this.showPenyakitOnly = false,
   }) : super(key: key);
 }
 
@@ -31,11 +35,15 @@ class _TambahRulePageState extends State<TambahRulePage> {
   int? selectedPenyakitId;
   List<int?> selectedGejalaIds = [null];
   List<double> nilaiPakarList = [0.5];
-  List<int?> selectedRuleIds = []; // List paralel dengan selectedGejalaIds dan nilaiPakarList
+  List<int?> selectedRuleIds =
+      []; // List paralel dengan selectedGejalaIds dan nilaiPakarList
 
   bool isEditing = true; // atau false jika sedang edit penyakit
 
   bool isLoading = true;
+
+  bool showHamaOnly = false;
+  bool showPenyakitOnly = false;
 
   final api = ApiService();
 
@@ -119,6 +127,8 @@ class _TambahRulePageState extends State<TambahRulePage> {
   @override
   void initState() {
     super.initState();
+    showHamaOnly = widget.showHamaOnly;
+    showPenyakitOnly = widget.showPenyakitOnly;
     fetchData(); // Panggil fetchData saat halaman dibuka pertama kali
   }
 
@@ -173,57 +183,6 @@ class _TambahRulePageState extends State<TambahRulePage> {
     }
   }
 
-  // void updateRules() async {
-  //   if (selectedPenyakitId == null && selectedHamaId == null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("Pilih minimal satu: Penyakit atau Hama")),
-  //     );
-  //     return;
-  //   }
-
-  //   try {
-  //     for (int i = 0; i < selectedGejalaIds.length; i++) {
-  //       final idRule = selectedRuleIds[i];
-  //       final idGejala = selectedGejalaIds[i];
-  //       final nilai = nilaiPakarList[i];
-
-  //       if (idRule != null && idGejala != null) {
-  //         http.Response response;
-
-  //         if (selectedPenyakitId != null) {
-  //           response = await ApiService.updateRulePenyakit(
-  //             id: idRule,
-  //             idGejala: idGejala,
-  //             idPenyakit: selectedPenyakitId,
-  //             nilaiPakar: nilai,
-  //           );
-  //         } else {
-  //           response = await ApiService.updateRuleHama(
-  //             id: idRule,
-  //             idGejala: idGejala,
-  //             idHama: selectedHamaId,
-  //             nilaiPakar: nilai,
-  //           );
-  //         }
-
-  //         if (response.statusCode != 200 && response.statusCode != 201) {
-  //           throw Exception("Gagal mengupdate rule");
-  //         }
-  //       }
-  //     }
-
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text("Data berhasil diperbarui")));
-  //     Navigator.pop(context);
-  //   } catch (e) {
-  //     print('Gagal memperbarui data: $e');
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text("Gagal memperbarui data")));
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -243,62 +202,68 @@ class _TambahRulePageState extends State<TambahRulePage> {
                     child: ListView(
                       children: [
                         // Pilih Hama
-                        Text("Pilih Hama"),
-                        DropdownButton<int>(
-                          isExpanded: true,
-                          value: selectedHamaId,
-                          hint: Text('Pilih Hama'),
-                          items:
-                              hamaList.isNotEmpty
-                                  ? hamaList.map<DropdownMenuItem<int>>((hama) {
-                                    return DropdownMenuItem<int>(
-                                      value: hama['id'],
-                                      child: Text(hama['nama']),
-                                    );
-                                  }).toList()
-                                  : [
-                                    DropdownMenuItem<int>(
-                                      value: null,
-                                      child: Text("Data tidak tersedia"),
-                                    ),
-                                  ],
-                          onChanged: (value) {
-                            setState(() {
-                              selectedHamaId = value;
-                            });
-                          },
-                        ),
-                        SizedBox(height: 16),
+                        if (!showPenyakitOnly) ...[
+                          Text("Pilih Hama"),
+                          DropdownButton<int>(
+                            isExpanded: true,
+                            value: selectedHamaId,
+                            hint: Text('Pilih Hama'),
+                            items:
+                                hamaList.isNotEmpty
+                                    ? hamaList.map<DropdownMenuItem<int>>((
+                                      hama,
+                                    ) {
+                                      return DropdownMenuItem<int>(
+                                        value: hama['id'],
+                                        child: Text(hama['nama']),
+                                      );
+                                    }).toList()
+                                    : [
+                                      DropdownMenuItem<int>(
+                                        value: null,
+                                        child: Text("Data tidak tersedia"),
+                                      ),
+                                    ],
+                            onChanged: (value) {
+                              setState(() {
+                                selectedHamaId = value;
+                              });
+                            },
+                          ),
+                          SizedBox(height: 16),
+                        ],
 
                         // Pilih Penyakit
-                        Text("Pilih Penyakit"),
-                        DropdownButton<int>(
-                          isExpanded: true,
-                          value: selectedPenyakitId,
-                          hint: Text('Pilih Penyakit'),
-                          items:
-                              penyakitList.isNotEmpty
-                                  ? penyakitList.map<DropdownMenuItem<int>>((
-                                    penyakit,
-                                  ) {
-                                    return DropdownMenuItem<int>(
-                                      value: penyakit['id'],
-                                      child: Text(penyakit['nama']),
-                                    );
-                                  }).toList()
-                                  : [
-                                    DropdownMenuItem<int>(
-                                      value: null,
-                                      child: Text("Data tidak tersedia"),
-                                    ),
-                                  ],
-                          onChanged: (value) {
-                            setState(() {
-                              selectedPenyakitId = value;
-                            });
-                          },
-                        ),
-                        SizedBox(height: 16),
+                        if (!showHamaOnly) ...[
+                          Text("Pilih Penyakit"),
+                          DropdownButton<int>(
+                            isExpanded: true,
+                            value: selectedPenyakitId,
+                            hint: Text('Pilih Penyakit'),
+                            items:
+                                penyakitList.isNotEmpty
+                                    ? penyakitList.map<DropdownMenuItem<int>>((
+                                      penyakit,
+                                    ) {
+                                      return DropdownMenuItem<int>(
+                                        value: penyakit['id'],
+                                        child: Text(penyakit['nama']),
+                                      );
+                                    }).toList()
+                                    : [
+                                      DropdownMenuItem<int>(
+                                        value: null,
+                                        child: Text("Data tidak tersedia"),
+                                      ),
+                                    ],
+                            onChanged: (value) {
+                              setState(() {
+                                selectedPenyakitId = value;
+                              });
+                            },
+                          ),
+                          SizedBox(height: 16),
+                        ],
 
                         // Pilih Gejala dan Nilai Pakar
                         Text("Pilih Gejala"),
@@ -398,7 +363,33 @@ class _TambahRulePageState extends State<TambahRulePage> {
                         // Tombol untuk menambah rule
                         ElevatedButton(
                           onPressed: () {
-                            // Panggil fungsi saveRules untuk menyimpan data
+                            // Cek duplikasi gejala
+                            final uniqueGejala = selectedGejalaIds.toSet();
+                            if (uniqueGejala.length !=
+                                selectedGejalaIds.length) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Terdapat gejala yang sama, harap pilih gejala yang berbeda.',
+                                  ),
+                                ),
+                              );
+                              return; // Gagal simpan
+                            }
+
+                            // Cek apakah semua nilai gejala sudah dipilih (tidak null)
+                            if (selectedGejalaIds.contains(null)) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Harap lengkapi semua pilihan gejala.',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Panggil fungsi saveRules jika valid
                             saveRules();
                           },
                           child: Text('Tambah Rule'),

@@ -162,6 +162,38 @@ class _PenyakitPageState extends State<PenyakitPage> {
                                       color: Color(0xFF9DC08D),
                                     ),
                                     onPressed: () {
+                                      // Parse nilai_pakar dengan aman
+                                      double nilaiPakar = 0.0;
+                                      if (penyakit['nilai_pakar'] != null) {
+                                        // Coba parse jika string
+                                        if (penyakit['nilai_pakar'] is String) {
+                                          try {
+                                            String nilaiStr =
+                                                penyakit['nilai_pakar']
+                                                    .toString()
+                                                    .trim();
+                                            if (nilaiStr.isNotEmpty) {
+                                              nilaiPakar = double.parse(
+                                                nilaiStr.replaceAll(',', '.'),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            print(
+                                              "Error parsing nilai_pakar: $e",
+                                            );
+                                          }
+                                        }
+                                        // Langsung gunakan jika sudah double
+                                        else if (penyakit['nilai_pakar']
+                                            is double) {
+                                          nilaiPakar = penyakit['nilai_pakar'];
+                                        }
+                                        // Jika int, konversi ke double
+                                        else if (penyakit['nilai_pakar'] is int) {
+                                          nilaiPakar =
+                                              penyakit['nilai_pakar'].toDouble();
+                                        }
+                                      }
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -176,6 +208,7 @@ class _PenyakitPageState extends State<PenyakitPage> {
                                                     penyakit['penanganan'] ?? '',
                                                 gambarUrl: 
                                                     penyakit['foto'] ?? '',
+                                                nilai_pakar: nilaiPakar,
                                                 onPenyakitUpdated:
                                                     _fetchPenyakit, // fungsi untuk refresh list setelah update
                                               ),

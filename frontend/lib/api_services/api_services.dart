@@ -13,6 +13,7 @@ class ApiService {
   static const String penyakitUrl = 'http://localhost:5000/api/penyakit';
   static const String rulesPenyakitUrl ='http://localhost:5000/api/rules_penyakit';
   static const String rulesHamaUrl = 'http://localhost:5000/api/rules_hama';
+  static const String userUrl = 'http://localhost:5000/api/users';
   static const Duration timeout = Duration(seconds: 15);
 
   // Fungsi Login (dengan perbaikan)
@@ -123,7 +124,6 @@ class ApiService {
   }
 
   // Ambil semua hama
-  // Get all hama
   Future<List<Map<String, dynamic>>> getHama() async {
     try {
       final response = await http.get(Uri.parse(hamaUrl)).timeout(timeout);
@@ -251,6 +251,7 @@ class ApiService {
     String deskripsi,
     String penanganan,
     XFile? pickedFile,
+    double nilai_pakar
   ) async {
     try {
       var uri = Uri.parse(hamaUrl);
@@ -259,6 +260,7 @@ class ApiService {
       request.fields['nama'] = nama;
       request.fields['deskripsi'] = deskripsi;
       request.fields['penanganan'] = penanganan;
+       request.fields['nilai_pakar'] = nilai_pakar.toString();
 
       print('Mengirim request ke: $uri');
       print('Dengan fields: ${request.fields}');
@@ -330,6 +332,7 @@ class ApiService {
     String deskripsi,
     String penanganan,
     XFile? pickedFile,
+    double nilai_pakar
   ) async {
     try {
       var uri = Uri.parse('$hamaUrl/$id');
@@ -339,6 +342,7 @@ class ApiService {
       request.fields['nama'] = nama;
       request.fields['deskripsi'] = deskripsi;
       request.fields['penanganan'] = penanganan;
+      request.fields['nilai_pakar'] = nilai_pakar.toString();
 
       // Log untuk debugging
       print('Mengirim request ke: $uri');
@@ -524,12 +528,33 @@ class ApiService {
     }
   }
 
+  Future<Uint8List?> getPenyakitImageBytesByFilename(String filename) async {
+  try {
+    final url = Uri.parse('http://localhost:5000/image_penyakit/$filename');
+    print('Fetching image from: $url');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      print('Failed to fetch image. Status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      return null;
+    }
+  } catch (e) {
+    print('Error fetching image by filename: $e');
+    return null;
+  }
+}
+
+
   // Tambah penyakit baru (kode otomatis)
   Future<Map<String, dynamic>> createPenyakit(
     String nama,
     String deskripsi,
     String penanganan,
     XFile? pickedFile,
+    double nilai_pakar
   ) async {
     try {
       var uri = Uri.parse(penyakitUrl);
@@ -538,6 +563,7 @@ class ApiService {
       request.fields['nama'] = nama;
       request.fields['deskripsi'] = deskripsi;
       request.fields['penanganan'] = penanganan;
+      request.fields['nilai_pakar'] = nilai_pakar.toString();
 
       print('Mengirim request ke: $uri');
       print('Dengan fields: ${request.fields}');
@@ -609,6 +635,7 @@ class ApiService {
     String deskripsi,
     String penanganan,
     XFile? pickedFile,
+    double nilai_pakar
   ) async {
     try {
       var uri = Uri.parse('$penyakitUrl/$id');
@@ -618,6 +645,7 @@ class ApiService {
       request.fields['nama'] = nama;
       request.fields['deskripsi'] = deskripsi;
       request.fields['penanganan'] = penanganan;
+      request.fields['nilai_pakar'] = nilai_pakar.toString();
 
       // Log untuk debugging
       print('Mengirim request ke: $uri');
@@ -889,4 +917,39 @@ class ApiService {
     final response = await http.delete(Uri.parse('$rulesHamaUrl/$id'));
     return response;
   }
+
+  //get users
+  Future<List<Map<String, dynamic>>> getUsers({String? role}) async {
+  try {
+    String url = ApiService.userUrl;
+    if (role != null) {
+      url += '?role=$role';
+    }
+
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> responseData = jsonDecode(response.body);
+
+      // Filter berdasarkan role jika perlu
+      if (role != null) {
+        // Mengambil user dengan role yang sesuai
+        final filteredData = responseData.where((user) => user['role'] == role).toList();
+        return List<Map<String, dynamic>>.from(filteredData);
+      }
+
+      // Jika tidak ada filter role, kembalikan semua data
+      return List<Map<String, dynamic>>.from(responseData);
+    } else {
+      throw Exception("Gagal mengambil data user: ${response.statusCode}");
+    }
+  } catch (e) {
+    print("Error getUsers: $e");
+    throw Exception("Gagal mengambil data user");
+  }
 }
+
+
+}
+
+

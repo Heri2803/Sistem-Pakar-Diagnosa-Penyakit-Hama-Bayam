@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/api_services/api_services.dart';
-import 'image_utilities.dart'; // Import file baru
+import 'image_utilities.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +11,7 @@ class EditHamaPage extends StatefulWidget {
   final String namaAwal;
   final String deskripsiAwal;
   final String penangananAwal;
+  final double nilai_pakar;
   final String gambarUrl;
   final VoidCallback onHamaUpdated;
 
@@ -20,6 +21,7 @@ class EditHamaPage extends StatefulWidget {
     required this.namaAwal,
     required this.deskripsiAwal,
     required this.penangananAwal,
+    required this.nilai_pakar,
     required this.gambarUrl,
     required this.onHamaUpdated,
   }) : super(key: key);
@@ -32,6 +34,7 @@ class _EditHamaPageState extends State<EditHamaPage> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _deskripsiController = TextEditingController();
   final TextEditingController _penangananController = TextEditingController();
+  final TextEditingController _nilaiPakarController = TextEditingController();
   final ApiService apiService = ApiService();
   final ImagePicker _picker = ImagePicker();
   
@@ -41,6 +44,8 @@ class _EditHamaPageState extends State<EditHamaPage> {
   String? _errorMessage;
   bool _isImageLoading = false;
   Uint8List? _currentImageBytes;
+  // Default value for nilai_pakar to prevent empty string issues
+  double _currentNilaiPakar = 0.0;
 
   @override
   void initState() {
@@ -48,6 +53,10 @@ class _EditHamaPageState extends State<EditHamaPage> {
     _namaController.text = widget.namaAwal;
     _deskripsiController.text = widget.deskripsiAwal;
     _penangananController.text = widget.penangananAwal;
+    
+    // Ensure nilai_pakar is properly initialized
+    _currentNilaiPakar = widget.nilai_pakar;
+    _nilaiPakarController.text = widget.nilai_pakar.toString();
     
     // Load existing image
     _loadExistingImage();
@@ -89,7 +98,23 @@ class _EditHamaPageState extends State<EditHamaPage> {
     _namaController.dispose();
     _deskripsiController.dispose();
     _penangananController.dispose();
+    _nilaiPakarController.dispose();
     super.dispose();
+  }
+
+  // Validate and parse nilai_pakar input
+  double _parseNilaiPakar() {
+    if (_nilaiPakarController.text.isEmpty) {
+      return _currentNilaiPakar; // Return current value if field is empty
+    }
+    
+    try {
+      String input = _nilaiPakarController.text.trim().replaceAll(',', '.');
+      return double.parse(input);
+    } catch (e) {
+      print("Error parsing nilai_pakar: $e");
+      return _currentNilaiPakar; // Return current value if parsing fails
+    }
   }
 
   Future<void> _updateHama() async {
@@ -99,12 +124,18 @@ class _EditHamaPageState extends State<EditHamaPage> {
         _errorMessage = null;
       });
 
+      // Get nilai_pakar value with safety check
+      double nilaiPakar = _parseNilaiPakar();
+      
+      print("Updating hama with nilai_pakar: $nilaiPakar");
+
       await apiService.updateHama(
         widget.idHama,
         _namaController.text,
         _deskripsiController.text,
         _penangananController.text,
         _pickedFile,
+        nilaiPakar,
       );
       
       setState(() {
@@ -257,41 +288,71 @@ class _EditHamaPageState extends State<EditHamaPage> {
                       maxLines: 3,
                     ),
                     SizedBox(height: 20),
-                    Text(
-                          'Foto Hama',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        _buildImagePreview(),
-                        SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: _pickImage,
-                              icon: Icon(Icons.photo_library),
-                              label: Text('Pilih Gambar'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                    ElevatedButton(
-                      onPressed: _updateHama,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[300],
+                    TextField(
+                      controller: _nilaiPakarController,
+                      decoration: InputDecoration(
+                        labelText: 'Nilai Pakar',
+                        hintText: 'Contoh: 0.5',
                       ),
-                      child: Text(
-                        'Simpan Perubahan',
-                        style: TextStyle(color: Colors.black),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (value) {
+                        // Validate as user types (optional)
+                        try {
+                          if (value.isNotEmpty) {
+                            double.parse(value.replaceAll(',', '.'));
+                          }
+                        } catch (e) {
+                          // Could show validation error here
+                        }
+                      },
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Foto Hama',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
+                    SizedBox(height: 8),
+                    _buildImagePreview(),
+                    SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _pickImage,
+                          icon: Icon(Icons.photo_library),
+                          label: Text('Pilih Gambar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    if (_isLoading)
+                      CircularProgressIndicator()
+                    else
+                      ElevatedButton(
+                        onPressed: _updateHama,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[300],
+                        ),
+                        child: Text(
+                          'Simpan Perubahan',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                    if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12.0),
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
                   ],
                 ),
               ),

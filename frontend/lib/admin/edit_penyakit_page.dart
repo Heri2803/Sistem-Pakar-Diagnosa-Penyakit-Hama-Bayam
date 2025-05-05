@@ -12,6 +12,7 @@ class EditPenyakitPage extends StatefulWidget {
   final String namaAwal;
   final String deskripsiAwal;
   final String penangananAwal;
+  final double nilai_pakar;
   final String gambarUrl;
   final VoidCallback onPenyakitUpdated;
 
@@ -21,6 +22,7 @@ class EditPenyakitPage extends StatefulWidget {
     required this.namaAwal,
     required this.deskripsiAwal,
     required this.penangananAwal,
+    required this.nilai_pakar,
     required this.gambarUrl,
     required this.onPenyakitUpdated,
   }) : super(key: key);
@@ -33,6 +35,7 @@ class _EditPenyakitPageState extends State<EditPenyakitPage> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _deskripsiController = TextEditingController();
   final TextEditingController _penangananController = TextEditingController();
+  final TextEditingController _nilaiPakarController = TextEditingController();
   final ApiService apiService = ApiService();
   final ImagePicker _picker = ImagePicker();
   
@@ -42,6 +45,7 @@ class _EditPenyakitPageState extends State<EditPenyakitPage> {
   String? _errorMessage;
   bool _isImageLoading = false;
   Uint8List? _currentImageBytes;
+  double _currentNilaiPakar = 0.0;
 
   @override
   void initState() {
@@ -49,6 +53,8 @@ class _EditPenyakitPageState extends State<EditPenyakitPage> {
     _namaController.text = widget.namaAwal;
     _deskripsiController.text = widget.deskripsiAwal;
     _penangananController.text = widget.penangananAwal;
+    _currentNilaiPakar = widget.nilai_pakar;
+    _nilaiPakarController.text = widget.nilai_pakar.toString();
     _loadExistingImage();
   }
 
@@ -91,6 +97,21 @@ class _EditPenyakitPageState extends State<EditPenyakitPage> {
     super.dispose();
   }
 
+  // Validate and parse nilai_pakar input
+  double _parseNilaiPakar() {
+    if (_nilaiPakarController.text.isEmpty) {
+      return _currentNilaiPakar; // Return current value if field is empty
+    }
+    
+    try {
+      String input = _nilaiPakarController.text.trim().replaceAll(',', '.');
+      return double.parse(input);
+    } catch (e) {
+      print("Error parsing nilai_pakar: $e");
+      return _currentNilaiPakar; // Return current value if parsing fails
+    }
+  }
+
   Future<void> _updatePenyakit() async {
     try {
       setState(() {
@@ -98,12 +119,18 @@ class _EditPenyakitPageState extends State<EditPenyakitPage> {
         _errorMessage = null;
       });
 
+      // Get nilai_pakar value with safety check
+      double nilaiPakar = _parseNilaiPakar();
+      
+      print("Updating hama with nilai_pakar: $nilaiPakar");
+
       await apiService.updatePenyakit(
         widget.idPenyakit,
         _namaController.text,
         _deskripsiController.text,
         _penangananController.text,
         _pickedFile,
+        nilaiPakar,
       );
       
       setState(() {
@@ -258,6 +285,25 @@ class _EditPenyakitPageState extends State<EditPenyakitPage> {
                       controller: _penangananController,
                       decoration: InputDecoration(labelText: 'Penanganan'),
                       maxLines: 3,
+                    ),
+                    SizedBox(height: 20),
+                    TextField(
+                      controller: _nilaiPakarController,
+                      decoration: InputDecoration(
+                        labelText: 'Nilai Pakar',
+                        hintText: 'Contoh: 0.5',
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (value) {
+                        // Validate as user types (optional)
+                        try {
+                          if (value.isNotEmpty) {
+                            double.parse(value.replaceAll(',', '.'));
+                          }
+                        } catch (e) {
+                          // Could show validation error here
+                        }
+                      },
                     ),
                     SizedBox(height: 20),
                     Text(

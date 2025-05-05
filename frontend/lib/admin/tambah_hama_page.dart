@@ -19,6 +19,7 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
   final TextEditingController namaController = TextEditingController();
   final TextEditingController deskripsiController = TextEditingController();
   final TextEditingController penangananController = TextEditingController();
+  final TextEditingController nilaiPakarController = TextEditingController();
   final ApiService apiService = ApiService();
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
@@ -32,19 +33,24 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
     namaController.dispose();
     deskripsiController.dispose();
     penangananController.dispose();
+    nilaiPakarController.dispose();
     super.dispose();
   }
 
   Future<void> _simpanHama() async {
     if (namaController.text.isNotEmpty &&
         deskripsiController.text.isNotEmpty &&
-        penangananController.text.isNotEmpty) {
+        penangananController.text.isNotEmpty &&
+        nilaiPakarController.text.isNotEmpty) {
       try {
+        String nilaiInput = nilaiPakarController.text.replaceAll(',', '.');
+        double nilaiPakar = double.parse(nilaiInput);
         await apiService.createHama(
           namaController.text,
           deskripsiController.text,
           penangananController.text,
-          _pickedFile,         
+          _pickedFile,
+          nilaiPakar,         
         );
         widget.onHamaAdded();
         Navigator.pop(context);
@@ -133,6 +139,12 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
                         TextField(
                           controller: penangananController,
                           decoration: InputDecoration(labelText: 'Penanganan Hama'),
+                          maxLines: 3,
+                        ),
+                        SizedBox(height: 15),
+                        TextField(
+                          controller: nilaiPakarController,
+                          decoration: InputDecoration(labelText: 'Nilai Pakar'),
                           maxLines: 3,
                         ),
                         SizedBox(height: 15),

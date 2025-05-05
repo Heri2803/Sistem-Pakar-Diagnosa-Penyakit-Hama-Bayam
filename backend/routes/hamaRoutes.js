@@ -68,6 +68,9 @@ router.get('/:id/image', hamaController.getHamaById);
  *                 type: string
  *                 format: binary
  *                 description: Foto hama (JPG, JPEG, PNG, GIF)
+ *               nilai_pakar:
+ *                 type: number
+ *                 format: float
  *     responses:
  *       201:
  *         description: Hama berhasil ditambahkan
@@ -105,6 +108,9 @@ router.post('/', uploadHamaGambar.single('foto'), hamaController.createHama);
  *               foto:
  *                 type: string
  *                 format: binary
+ *               nilai_pakar:
+ *                 type: number
+ *                 format: float
  *     responses:
  *       200:
  *         description: Hama berhasil diperbarui

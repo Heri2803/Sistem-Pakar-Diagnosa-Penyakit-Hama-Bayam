@@ -18,6 +18,7 @@ class _TambahPenyakitPageState extends State<TambahPenyakitPage> {
   final TextEditingController namaController = TextEditingController();
   final TextEditingController deskripsiController = TextEditingController();
   final TextEditingController penangananController = TextEditingController();
+  final TextEditingController nilaiPakarController = TextEditingController();
   final ApiService apiService = ApiService();
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
@@ -31,19 +32,24 @@ class _TambahPenyakitPageState extends State<TambahPenyakitPage> {
     namaController.dispose();
     deskripsiController.dispose();
     penangananController.dispose();
+    nilaiPakarController.dispose();
     super.dispose();
   }
 
   Future<void> _simpanPenyakit() async {
     if (namaController.text.isNotEmpty &&
         deskripsiController.text.isNotEmpty &&
-        penangananController.text.isNotEmpty) {
+        penangananController.text.isNotEmpty &&
+        nilaiPakarController.text.isNotEmpty) {
       try {
+        String nilaiInput = nilaiPakarController.text.replaceAll(',', '.');
+        double nilaiPakar = double.parse(nilaiInput);
         await apiService.createPenyakit(
           namaController.text,
           deskripsiController.text,
           penangananController.text,
           _pickedFile,
+          nilaiPakar,
         );
         widget.onPenyakitAdded();
         Navigator.pop(context);
@@ -132,6 +138,12 @@ class _TambahPenyakitPageState extends State<TambahPenyakitPage> {
                         TextField(
                           controller: penangananController,
                           decoration: InputDecoration(labelText: 'Penanganan Penyakit'),
+                          maxLines: 3,
+                        ),
+                        SizedBox(height: 15),
+                        TextField(
+                          controller: nilaiPakarController,
+                          decoration: InputDecoration(labelText: 'nilai pakar'),
                           maxLines: 3,
                         ),
                         SizedBox(height: 15),

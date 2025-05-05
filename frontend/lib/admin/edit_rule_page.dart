@@ -13,6 +13,8 @@ class EditRulePage extends StatefulWidget {
   final List<double> nilaiPakarList;
   final int? selectedHamaId;
   final int? selectedPenyakitId;
+  final bool showHamaOnly; // Tambahkan ini
+  final bool showPenyakitOnly; // Tambahkan ini
 
   const EditRulePage({
     Key? key,
@@ -21,6 +23,8 @@ class EditRulePage extends StatefulWidget {
     required this.selectedRuleIds,
     required this.selectedGejalaIds,
     required this.nilaiPakarList,
+    this.showHamaOnly = false, // Tambahkan default value
+    this.showPenyakitOnly = false,
     this.selectedHamaId,
     this.selectedPenyakitId,
   }) : super(key: key);
@@ -36,6 +40,9 @@ class _EditRulePageState extends State<EditRulePage> {
   bool isEditing = true; // atau false jika sedang edit penyakit
 
   bool isLoading = true;
+
+  bool showHamaOnly = false;
+  bool showPenyakitOnly = false;
 
   final api = ApiService();
 
@@ -154,6 +161,8 @@ class _EditRulePageState extends State<EditRulePage> {
   @override
   void initState() {
     super.initState();
+    showHamaOnly = widget.showHamaOnly;
+    showPenyakitOnly = widget.showPenyakitOnly;
     fetchData(); // Panggil fetchData saat halaman dibuka pertama kali
 
     // Inisialisasi dari widget parent
@@ -250,62 +259,68 @@ class _EditRulePageState extends State<EditRulePage> {
                     child: ListView(
                       children: [
                         // Pilih Hama
-                        Text("Pilih Hama"),
-                        DropdownButton<int>(
-                          isExpanded: true,
-                          value: selectedHamaId,
-                          hint: Text('Pilih Hama'),
-                          items:
-                              hamaList.isNotEmpty
-                                  ? hamaList.map<DropdownMenuItem<int>>((hama) {
-                                    return DropdownMenuItem<int>(
-                                      value: hama['id'],
-                                      child: Text(hama['nama']),
-                                    );
-                                  }).toList()
-                                  : [
-                                    DropdownMenuItem<int>(
-                                      value: null,
-                                      child: Text("Data tidak tersedia"),
-                                    ),
-                                  ],
-                          onChanged: (value) {
-                            setState(() {
-                              selectedHamaId = value;
-                            });
-                          },
-                        ),
-                        SizedBox(height: 16),
+                        if (!showPenyakitOnly) ...[
+                          Text("Pilih Hama"),
+                          DropdownButton<int>(
+                            isExpanded: true,
+                            value: selectedHamaId,
+                            hint: Text('Pilih Hama'),
+                            items:
+                                hamaList.isNotEmpty
+                                    ? hamaList.map<DropdownMenuItem<int>>((
+                                      hama,
+                                    ) {
+                                      return DropdownMenuItem<int>(
+                                        value: hama['id'],
+                                        child: Text(hama['nama']),
+                                      );
+                                    }).toList()
+                                    : [
+                                      DropdownMenuItem<int>(
+                                        value: null,
+                                        child: Text("Data tidak tersedia"),
+                                      ),
+                                    ],
+                            onChanged: (value) {
+                              setState(() {
+                                selectedHamaId = value;
+                              });
+                            },
+                          ),
+                          SizedBox(height: 16),
+                        ],
 
                         // Pilih Penyakit
-                        Text("Pilih Penyakit"),
-                        DropdownButton<int>(
-                          isExpanded: true,
-                          value: selectedPenyakitId,
-                          hint: Text('Pilih Penyakit'),
-                          items:
-                              penyakitList.isNotEmpty
-                                  ? penyakitList.map<DropdownMenuItem<int>>((
-                                    penyakit,
-                                  ) {
-                                    return DropdownMenuItem<int>(
-                                      value: penyakit['id'],
-                                      child: Text(penyakit['nama']),
-                                    );
-                                  }).toList()
-                                  : [
-                                    DropdownMenuItem<int>(
-                                      value: null,
-                                      child: Text("Data tidak tersedia"),
-                                    ),
-                                  ],
-                          onChanged: (value) {
-                            setState(() {
-                              selectedPenyakitId = value;
-                            });
-                          },
-                        ),
-                        SizedBox(height: 16),
+                        if (!showHamaOnly) ...[
+                          Text("Pilih Penyakit"),
+                          DropdownButton<int>(
+                            isExpanded: true,
+                            value: selectedPenyakitId,
+                            hint: Text('Pilih Penyakit'),
+                            items:
+                                penyakitList.isNotEmpty
+                                    ? penyakitList.map<DropdownMenuItem<int>>((
+                                      penyakit,
+                                    ) {
+                                      return DropdownMenuItem<int>(
+                                        value: penyakit['id'],
+                                        child: Text(penyakit['nama']),
+                                      );
+                                    }).toList()
+                                    : [
+                                      DropdownMenuItem<int>(
+                                        value: null,
+                                        child: Text("Data tidak tersedia"),
+                                      ),
+                                    ],
+                            onChanged: (value) {
+                              setState(() {
+                                selectedPenyakitId = value;
+                              });
+                            },
+                          ),
+                          SizedBox(height: 16),
+                        ],
 
                         // Pilih Gejala dan Nilai Pakar
                         Text("Pilih Gejala"),

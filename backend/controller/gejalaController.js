@@ -4,7 +4,7 @@ const {Gejala} = require('../models');
 exports.getAllGejala = async (req, res) => {
   try {
     const gejala = await Gejala.findAll({
-      attributes: ['id', 'nama']
+      attributes: ['id', 'nama', 'kode']
     });
     res.status(200).json(gejala);
   } catch (error) {

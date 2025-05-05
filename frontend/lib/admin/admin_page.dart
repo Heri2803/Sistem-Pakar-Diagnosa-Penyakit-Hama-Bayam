@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'hama_page.dart';
 import 'penyakit_page.dart';
 import 'gejala_page.dart';
@@ -6,7 +7,65 @@ import 'rule_page.dart';
 import 'package:frontend/api_services/api_services.dart';
 import 'package:frontend/user/login_page.dart';
 
-class AdminPage extends StatelessWidget {
+class AdminPage extends StatefulWidget {
+  @override
+  _AdminPageState createState() => _AdminPageState();
+}
+
+class _AdminPageState extends State<AdminPage> {
+  // Data counters
+  int userCount = 0;
+  int diagnosisCount = 0;
+  int diseaseCount = 0;
+  int pestCount = 0;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  // Method untuk memuat data dashboard dari API
+  Future<void> _loadDashboardData() async {
+  try {
+    setState(() {
+      isLoading = true;
+    });
+
+    print("Fetching users with role 'user'...");
+
+    // Mengambil jumlah user dengan role 'user'
+    final userList = await ApiService().getUsers(role: 'user');
+    if (userList != null && userList.isNotEmpty) {
+      userCount = userList.length;
+      print("Jumlah user: $userCount");
+    } else {
+      print("Tidak ada user dengan role 'user'.");
+    }
+
+    print("Fetching data penyakit...");
+    // Mengambil data penyakit menggunakan fungsi yang sudah ada
+    final penyakitList = await ApiService().getPenyakit();
+    diseaseCount = penyakitList.length;
+    print("Jumlah penyakit: $diseaseCount");
+
+    print("Fetching data hama...");
+    // Mengambil data hama menggunakan fungsi yang sudah ada
+    final hamaList = await ApiService().getHama();
+    pestCount = hamaList.length;
+    print("Jumlah hama: $pestCount");
+
+  } catch (e) {
+    print("Error loading dashboard data: $e");
+  } finally {
+    setState(() {
+      isLoading = false;
+    });
+  }
+}
+
+
   Future<void> _logout(BuildContext context) async {
     await ApiService.logoutUser();
     Navigator.pushReplacement(
@@ -18,7 +77,10 @@ class AdminPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Admin Dashboard')),
+      appBar: AppBar(
+        title: Text('Admin Dashboard'),
+        backgroundColor: Color(0xFF9DC08D),
+      ),
       drawer: Drawer(
         child: Container(
           color: Color(0xFFFFFFFF),
@@ -80,41 +142,61 @@ class AdminPage extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Selamat datang Admin!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 24),
-            Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildCard('Jumlah User', '10'),
-                    _buildCard('Jumlah Diagnosa', '25'),
-                  ],
-                ),
-                SizedBox(height: 16), // Spasi antar baris
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildCard('Penyakit', '15'),
-                    _buildCard('Hama', '15'),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Selamat datang Admin!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 24),
+              isLoading
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF9DC08D)),
+                  )
+                  : Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildCard(
+                            'Jumlah User',
+                            userCount.toString(),
+                            Icons.people,
+                          ),
+                          _buildCard(
+                            'Jumlah Diagnosa',
+                            diagnosisCount.toString(),
+                            Icons.assignment,
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildCard(
+                            'Penyakit',
+                            diseaseCount.toString(),
+                            Icons.sick,
+                          ),
+                          _buildCard(
+                            'Hama',
+                            pestCount.toString(),
+                            Icons.bug_report,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCard(String title, String count) {
+  Widget _buildCard(String title, String count, IconData icon) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -125,13 +207,22 @@ class AdminPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(icon, size: 40, color: Color(0xFF9DC08D)),
+            SizedBox(height: 10),
             Text(
               title,
               textAlign: TextAlign.center,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
-            Text(count, style: TextStyle(fontSize: 20, color: Colors.green)),
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 24,
+                color: Color(0xFF9DC08D),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),

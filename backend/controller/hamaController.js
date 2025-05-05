@@ -6,7 +6,7 @@ const fs = require('fs');
 exports.getAllHama = async (req, res) => {
   try {
     const dataHama = await Hama.findAll({
-      attributes: ['id', 'nama' , 'deskripsi' , 'penanganan', 'foto']
+      attributes: ['id', 'nama' , 'deskripsi' , 'penanganan', 'foto', 'kode', 'nilai_pakar']
     });
     res.status(200).json({ message: 'Data hama berhasil diambil', data: dataHama });
   } catch (error) {
@@ -51,7 +51,7 @@ exports.getHamaById = async (req, res) => {
 // Pastikan sudah import 'Hama' model dan multer middleware sebelumnya
 exports.createHama = async (req, res) => {
   try {
-    const { nama, deskripsi, penanganan } = req.body;
+    const { nama, deskripsi, penanganan, nilai_pakar } = req.body;
     const file = req.file; 
 
     // Cek kode terakhir
@@ -71,10 +71,11 @@ exports.createHama = async (req, res) => {
     const newHama = await Hama.create({
       kode: newKode,
       nama,
-      kategori: 'hama', // Default kategori
+      kategori: 'hama', 
       deskripsi,
       penanganan,
-      foto: fotoPath, // ⬅️ Masukkan nama file ke database
+      foto: fotoPath, 
+      nilai_pakar
     });
 
     res.status(201).json({ message: 'Hama berhasil ditambahkan', data: newHama });
@@ -88,7 +89,7 @@ exports.createHama = async (req, res) => {
 exports.updateHama = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nama, kategori, deskripsi, penanganan } = req.body;
+    const { nama, kategori, deskripsi, penanganan, nilai_pakar, } = req.body;
 
     const hama = await Hama.findByPk(id);
     if (!hama) {
@@ -101,7 +102,7 @@ exports.updateHama = async (req, res) => {
        foto = req.file.filename;
      }
 
-    await hama.update({ nama, kategori, deskripsi, penanganan, foto });
+    await hama.update({ nama, kategori, deskripsi, penanganan, foto, nilai_pakar });
 
     res.status(200).json({ message: 'Hama berhasil diperbarui', data: hama });
   } catch (error) {
