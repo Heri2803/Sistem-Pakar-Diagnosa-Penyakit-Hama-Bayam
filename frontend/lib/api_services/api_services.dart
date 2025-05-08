@@ -14,7 +14,46 @@ class ApiService {
   static const String rulesPenyakitUrl ='http://localhost:5000/api/rules_penyakit';
   static const String rulesHamaUrl = 'http://localhost:5000/api/rules_hama';
   static const String userUrl = 'http://localhost:5000/api/users';
+  static const String diagnosaUrl = 'http://localhost:5000/api/diagnosa';
   static const Duration timeout = Duration(seconds: 15);
+
+/// Fungsi untuk mengirim gejala dan menerima hasil diagnosa
+// Kirim gejala dan dapatkan hasil diagnosa
+  Future<Map<String, dynamic>> diagnosa(List<String> gejalIds) async {
+    // Konversi string ID menjadi integer jika backend Anda membutuhkan integer
+    List<int> gejalaNumerik = [];
+    try {
+      gejalaNumerik = gejalIds.map((id) => int.parse(id)).toList();
+    } catch (e) {
+      print("Error saat konversi ID gejala ke integer: $e");
+      // Jika konversi gagal, gunakan ID string saja
+      final response = await http.post(
+        Uri.parse('$diagnosaUrl'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'gejala': gejalIds}),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Gagal melakukan diagnosa: ${response.statusCode} - ${response.body}');
+      }
+    }
+
+    // Jika konversi berhasil, gunakan ID numerik
+    final response = await http.post(
+      Uri.parse('$diagnosaUrl'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'gejala': gejalaNumerik}),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Gagal melakukan diagnosa: ${response.statusCode} - ${response.body}');
+    }
+  }
+
 
   // Fungsi Login (dengan perbaikan)
   static Future<Map<String, dynamic>> loginUser(

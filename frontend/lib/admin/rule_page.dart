@@ -20,6 +20,10 @@ class _RulePageState extends State<RulePage> {
   List<dynamic> rules = [];
   bool isLoading = true;
 
+  // Pagination variables
+  int currentPage = 0;
+  int rowsPerPage = 10;
+
   @override
   void initState() {
     super.initState();
@@ -61,23 +65,16 @@ class _RulePageState extends State<RulePage> {
             'nama_gejala': gejala['nama'],
             'nama_penyakit': penyakit['nama'],
             'nama_hama': null,
-            'nilai_pakar':
-                rule['nilai_pakar'], // Menambahkan nilai_pakar dari rule_penyakit
+            'nilai_pakar': rule['nilai_pakar'],
           };
         }),
         // Mengolah rules hama
         ...rulesHama.map((rule) {
-          print(
-            "Rule id_gejala: ${rule['id_gejala']}, id_hama: ${rule['id_hama']}",
-          );
-
           // Mencari gejala berdasarkan id
-          final gejala = gejalaList.firstWhere((item) {
-            print(
-              "Mencocokkan gejala id: ${item['id']} dengan ${rule['id_gejala']}",
-            );
-            return item['id'] == rule['id_gejala'];
-          }, orElse: () => {'nama': 'TIDAK DITEMUKAN'});
+          final gejala = gejalaList.firstWhere(
+            (item) => item['id'] == rule['id_gejala'],
+            orElse: () => {'nama': 'TIDAK DITEMUKAN'},
+          );
 
           // Mencari hama berdasarkan id
           final hama = hamaList.firstWhere(
@@ -85,31 +82,15 @@ class _RulePageState extends State<RulePage> {
             orElse: () => {'nama': 'TIDAK DITEMUKAN'},
           );
 
-          print(
-            "Gejala ditemukan: ${gejala['nama']}, Hama ditemukan: ${hama['nama']}",
-          );
-
-          // Menampilkan isi dari gejalaList dan hamaList untuk debugging
-          print("Isi gejalaList:");
-          for (var item in gejalaList) {
-            print(item);
-          }
-
-          print("Isi hamaList:");
-          for (var item in hamaList) {
-            print(item);
-          }
-
           return {
             'id': rule['id'],
             'id_gejala': rule['id_gejala'],
             'id_penyakit': null,
             'id_hama': rule['id_hama'],
-            'nama_gejala': gejala['nama'], // Memastikan nama gejala ditampilkan
+            'nama_gejala': gejala['nama'],
             'nama_penyakit': null,
-            'nama_hama': hama['nama'], // Memastikan nama hama ditampilkan
-            'nilai_pakar':
-                rule['nilai_pakar'], // Menambahkan nilai_pakar dari rule_hama
+            'nama_hama': hama['nama'],
+            'nilai_pakar': rule['nilai_pakar'],
           };
         }),
       ];
@@ -119,14 +100,6 @@ class _RulePageState extends State<RulePage> {
       });
     } catch (e) {
       print('Terjadi kesalahan saat memuat data: $e');
-      for (var rule in rules) {
-        print("Mencari gejala untuk id_gejala: ${rule['id_gejala']}");
-        var gejala = gejalaList.firstWhere(
-          (item) => item['id'].toString() == rule['id_gejala'].toString(),
-          orElse: () => {'nama': 'TIDAK DITEMUKAN'},
-        );
-        print("Gejala ditemukan: ${gejala['nama']}");
-      }
     } finally {
       setState(() {
         isLoading = false;
@@ -140,23 +113,17 @@ class _RulePageState extends State<RulePage> {
 
       // Tentukan fungsi delete berdasarkan isi rule
       if (rule['id_hama'] != null) {
-        res = await ApiService.deleteRuleHama(
-          rule['id'],
-        ); // Fungsi API untuk delete hama
+        res = await ApiService.deleteRuleHama(rule['id']); // Fungsi API untuk delete hama
       } else if (rule['id_penyakit'] != null) {
-        res = await ApiService.deleteRulePenyakit(
-          rule['id'],
-        ); // Fungsi API untuk delete penyakit
+        res = await ApiService.deleteRulePenyakit(rule['id']); // Fungsi API untuk delete penyakit
       } else {
-        throw Exception(
-          "Data rule tidak valid (tidak ada id_hama atau id_penyakit)",
-        );
+        throw Exception("Data rule tidak valid (tidak ada id_hama atau id_penyakit)");
       }
 
       if (res.statusCode == 200) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Rule berhasil dihapus")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Rule berhasil dihapus"))
+        );
         fetchRules(); // Refresh data setelah delete
       } else {
         throw Exception("Gagal menghapus rule");
@@ -166,6 +133,18 @@ class _RulePageState extends State<RulePage> {
         SnackBar(content: Text("Terjadi kesalahan saat menghapus: $e")),
       );
     }
+  }
+
+  // Get paginated data
+  List<dynamic> get paginatedRules {
+    final startIndex = currentPage * rowsPerPage;
+    final endIndex = startIndex + rowsPerPage > rules.length ? rules.length : startIndex + rowsPerPage;
+    
+    if (startIndex >= rules.length) {
+      return [];
+    }
+    
+    return rules.sublist(startIndex, endIndex);
   }
 
   @override
@@ -238,109 +217,130 @@ class _RulePageState extends State<RulePage> {
             isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('No')),
-                          DataColumn(label: Text('Hama / Penyakit')),
-                          DataColumn(label: Text('Gejala')),
-                          DataColumn(label: Text('nilai pakar')),
-                          DataColumn(label: Text('Aksi')),
-                        ],
-                        rows: List.generate(rules.length, (index) {
-                          final rule = rules[index];
-
-                          final namaKategori =
-                              rule['id_penyakit'] != null
-                                  ? rule['nama_penyakit'] ?? '-'
-                                  : rule['nama_hama'] ?? '-';
-
-                          final isPenyakit = rule['id_penyakit'] != null;
-
-                          return DataRow(
-                            cells: [
-                              DataCell(Text((index + 1).toString())),
-                              DataCell(Text(namaKategori)),
-                              DataCell(Text(rule['nama_gejala'] ?? '-')),
-                              DataCell(
-                                Text(rule['nilai_pakar']?.toString() ?? '-'),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: DataTable(
+                              headingRowColor: MaterialStateProperty.resolveWith<Color>(
+                                (Set<MaterialState> states) {
+                                  return Color(0xFF9DC08D); // Apply color to all header rows
+                                },
                               ),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.edit,
-                                        color: Colors.orange,
-                                      ),
-                                      onPressed: () {
-                                        if (rule != null &&
-                                            rule['id'] != null &&
-                                            rule['id_gejala'] != null &&
-                                            rule['nilai_pakar'] != null) {
-                                          // Tentukan jenis rule untuk editing
-                                          final bool editingHama = rule['id_hama'] != null;
-                                          
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => EditRulePage(
-                                                isEditing: true,
-                                                isEditingHama: editingHama,
-                                                selectedRuleIds: [
-                                                  rule['id'] as int,
-                                                ],
-                                                selectedGejalaIds: [
-                                                  rule['id_gejala'] as int,
-                                                ],
-                                                nilaiPakarList: [
-                                                  (rule['nilai_pakar'] as num)
-                                                      .toDouble(),
-                                                ],
-                                                selectedHamaId:
-                                                    rule['id_hama'] as int?,
-                                                selectedPenyakitId: rule['id_penyakit'] as int?,
-                                                // Tambahkan parameter untuk menentukan dropdown yang ditampilkan
-                                                showHamaOnly: editingHama,
-                                                showPenyakitOnly: !editingHama,
-                                              ),
-                                            ),
-                                          ).then((_) => fetchRules());
-                                        } else {
-                                          // Tampilkan pesan error jika data rule tidak lengkap
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                "Data rule tidak lengkap atau tidak valid",
-                                              ),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
+                              columns: const [
+                                DataColumn(label: Text('No')),
+                                DataColumn(label: Text('Hama & Penyakit')),
+                                DataColumn(label: Text('Gejala')),
+                                DataColumn(label: Text('Nilai Pakar')),
+                                DataColumn(label: Text('Aksi')),
+                              ],
+                              rows: List.generate(paginatedRules.length, (index) {
+                                final rule = paginatedRules[index];
+                                final displayIndex = currentPage * rowsPerPage + index + 1;
 
-                                          // Debug info
-                                          print("Rule data: $rule");
-                                        }
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
+                                final namaKategori = rule['id_penyakit'] != null
+                                    ? rule['nama_penyakit'] ?? '-'
+                                    : rule['nama_hama'] ?? '-';
+
+                                final isPenyakit = rule['id_penyakit'] != null;
+
+                                return DataRow(
+                                  cells: [
+                                    DataCell(Text(displayIndex.toString())),
+                                    DataCell(Text(namaKategori)),
+                                    DataCell(Text(rule['nama_gejala'] ?? '-')),
+                                    DataCell(Text(rule['nilai_pakar']?.toString() ?? '-')),
+                                    DataCell(
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              color: Colors.orange,
+                                            ),
+                                            onPressed: () {
+                                              if (rule != null &&
+                                                  rule['id'] != null &&
+                                                  rule['id_gejala'] != null &&
+                                                  rule['nilai_pakar'] != null) {
+                                                // Tentukan jenis rule untuk editing
+                                                final bool editingHama = rule['id_hama'] != null;
+                                                
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => EditRulePage(
+                                                      isEditing: true,
+                                                      isEditingHama: editingHama,
+                                                      selectedRuleIds: [rule['id'] as int],
+                                                      selectedGejalaIds: [rule['id_gejala'] as int],
+                                                      nilaiPakarList: [(rule['nilai_pakar'] as num).toDouble()],
+                                                      selectedHamaId: rule['id_hama'] as int?,
+                                                      selectedPenyakitId: rule['id_penyakit'] as int?,
+                                                      // Tambahkan parameter untuk menentukan dropdown yang ditampilkan
+                                                      showHamaOnly: editingHama,
+                                                      showPenyakitOnly: !editingHama,
+                                                    ),
+                                                  ),
+                                                ).then((_) => fetchRules());
+                                              } else {
+                                                // Tampilkan pesan error jika data rule tidak lengkap
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text("Data rule tidak lengkap atau tidak valid"),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                                // Debug info
+                                                print("Rule data: $rule");
+                                              }
+                                            },
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
+                                            ),
+                                            onPressed: () {
+                                              deleteRule(rule);
+                                            },
+                                          ),
+                                        ],
                                       ),
-                                      onPressed: () {
-                                        deleteRule(rule);
-                                      },
                                     ),
                                   ],
-                                ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ),
+                        ),
+                        // Pagination controls
+                        Container(
+                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.chevron_left),
+                                onPressed: currentPage > 0
+                                    ? () => setState(() => currentPage--)
+                                    : null,
+                              ),
+                              Text('Halaman ${currentPage + 1} dari ${(rules.length / rowsPerPage).ceil()}'),
+                              IconButton(
+                                icon: Icon(Icons.chevron_right),
+                                onPressed: (currentPage + 1) * rowsPerPage < rules.length
+                                    ? () => setState(() => currentPage++)
+                                    : null,
                               ),
                             ],
-                          );
-                        }),
-                      ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
           ],

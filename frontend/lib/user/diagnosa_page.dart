@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'hasil_diagnosa_page.dart';
-import 'package:frontend/api_services/api_services.dart';  // Import API service untuk ambil data
+import 'package:frontend/api_services/api_services.dart';
 
 class DiagnosaPage extends StatefulWidget {
   @override
@@ -9,171 +9,220 @@ class DiagnosaPage extends StatefulWidget {
 
 class _DiagnosaPageState extends State<DiagnosaPage> {
   List<Map<String, dynamic>> gejalaList = [];
-  List<String> gejalaTerpilih = [];
+  List<String> gejalaTerpilihIds = []; // Menyimpan ID gejala
+  List<String> gejalaTerpilihNames = []; // Menyimpan nama gejala untuk tampilan
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchGejala(); // Ambil data dari MySQL saat halaman dibuka
+    fetchGejala();
   }
 
   void fetchGejala() async {
-  try {
-    setState(() {
-      isLoading = true; // Tampilkan loading sebelum data diambil
-    });
+    try {
+      setState(() {
+        isLoading = true;
+      });
 
-    List<Map<String, dynamic>> data = await ApiService().getGejala();
+      List<Map<String, dynamic>> data = await ApiService().getGejala();
 
-    setState(() {
-      gejalaList = data; // Simpan data ke dalam state
-      isLoading = false; // Matikan loading setelah data berhasil diambil
-    });
-  } catch (e) {
-    print("Error mengambil data gejala: $e");
-    setState(() {
-      isLoading = false; // Pastikan loading berhenti meskipun terjadi error
-    });
+      setState(() {
+        gejalaList = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("Error mengambil data gejala: $e");
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
-}
 
-
-  void pilihGejala(String gejala) {
+  void pilihGejala(String gejalaId, String gejalaName) {
     setState(() {
-      if (!gejalaTerpilih.contains(gejala)) {
-        gejalaTerpilih.add(gejala);
+      if (!gejalaTerpilihIds.contains(gejalaId)) {
+        gejalaTerpilihIds.add(gejalaId);
+        gejalaTerpilihNames.add(gejalaName);
       }
     });
   }
 
-  void hapusGejala(String gejala) {
+  void hapusGejala(int index) {
     setState(() {
-      gejalaTerpilih.remove(gejala);
+      gejalaTerpilihIds.removeAt(index);
+      gejalaTerpilihNames.removeAt(index);
     });
   }
 
-  @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Color(0xFF9DC08D),
-    body: SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
+  void prosesHasilDiagnosa() async {
+    if (gejalaTerpilihIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Silakan pilih minimal satu gejala')),
+      );
+      return;
+    }
+
+    try {
+      // Tampilkan indikator loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
+      // Panggil API untuk diagnosa
+      final hasilDiagnosa = await ApiService().diagnosa(gejalaTerpilihIds);
+
+      // Tutup dialog loading
+      Navigator.pop(context);
+
+      // Navigasi ke halaman hasil
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HasilDiagnosaPage(
+            hasilDiagnosa: hasilDiagnosa,
+            gejalaTerpilih: gejalaTerpilihNames,
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 10.0),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Diagnosa Gejala",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  Text(
-                    "Penyakit dan Hama",
-                    style: TextStyle(fontSize: 20, color: Colors.white),
-                  ),
-                ],
+        ),
+      );
+    } catch (e) {
+      // Tutup dialog loading
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFF9DC08D),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
               ),
             ),
-          ),
-          Expanded(
-            child: isLoading
-                ? Center(child: CircularProgressIndicator()) // Tampilkan loading saat mengambil data
-                : Center(
-                    child: Card(
-                      margin: EdgeInsets.all(20),
-                      elevation: 5,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              "Pilih gejala yang Anda temukan",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 20),
-                            SizedBox(
-                              height: 200, // Perbaiki ukuran list
-                              child: gejalaList.isEmpty
-                                  ? Center(child: Text("Tidak ada data gejala"))
-                                  : ListView.builder(
-                                      itemCount: gejalaList.length,
-                                      itemBuilder: (context, index) {
-                                        String namaGejala = (gejalaList[index]['nama'] ?? "Tidak diketahui").toString();
-                                        return ListTile(
-                                          title: Text(namaGejala),
-                                          trailing: Icon(Icons.add_circle, color: Colors.green),
-                                          onTap: () => pilihGejala(namaGejala),
-                                        );
-                                      },
-                                    ),
-                            ),
-                            Divider(color: Colors.grey),
-                            SizedBox(
-                              height: 100,
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  children: gejalaTerpilih.map((item) {
-                                    return ListTile(
-                                      title: Text(item, style: TextStyle(color: Colors.black)),
-                                      trailing: Icon(Icons.delete, color: Colors.red),
-                                      onTap: () => hapusGejala(item),
-                                    );
-                                  }).toList(),
-                                ),
+            Padding(
+              padding: const EdgeInsets.only(top: 10.0),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Diagnosa Gejala",
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    Text(
+                      "Penyakit dan Hama",
+                      style: TextStyle(fontSize: 20, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : Center(
+                      child: Card(
+                        margin: EdgeInsets.all(20),
+                        elevation: 5,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Pilih gejala yang Anda temukan",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                               ),
-                            ),
-                            SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
+                              SizedBox(height: 20),
+                              SizedBox(
+                                height: 200,
+                                child: gejalaList.isEmpty
+                                    ? Center(child: Text("Tidak ada data gejala"))
+                                    : ListView.builder(
+                                        itemCount: gejalaList.length,
+                                        itemBuilder: (context, index) {
+                                          String gejalaId = (gejalaList[index]['id'] ?? "").toString();
+                                          String namaGejala = (gejalaList[index]['nama'] ?? "Tidak diketahui").toString();
+                                          return ListTile(
+                                            title: Text(namaGejala),
+                                            trailing: Icon(Icons.add_circle, color: Colors.green),
+                                            onTap: () => pilihGejala(gejalaId, namaGejala),
+                                          );
+                                        },
+                                      ),
+                              ),
+                              Divider(color: Colors.grey),
+                              Text(
+                                "Gejala Terpilih",
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 5),
+                              SizedBox(
+                                height: 100,
+                                child: gejalaTerpilihNames.isEmpty
+                                  ? Center(child: Text("Belum ada gejala yang dipilih"))
+                                  : SingleChildScrollView(
+                                      child: Column(
+                                        children: List.generate(gejalaTerpilihNames.length, (index) {
+                                          return ListTile(
+                                            title: Text(gejalaTerpilihNames[index], style: TextStyle(color: Colors.black)),
+                                            trailing: Icon(Icons.delete, color: Colors.red),
+                                            onTap: () => hapusGejala(index),
+                                          );
+                                        }),
+                                      ),
+                                    ),
+                              ),
+                            
+                              SizedBox(
+                                width: double.infinity,
+                                height: 30,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                  ),
+                                  onPressed: prosesHasilDiagnosa,
+                                  child: Text(
+                                    "Lihat Hasil Diagnosa",
+                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                                   ),
                                 ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => HasilDiagnosaPage(gejalaTerpilih: gejalaTerpilih),
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  "Lihat Hasil Diagnosa",
-                                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

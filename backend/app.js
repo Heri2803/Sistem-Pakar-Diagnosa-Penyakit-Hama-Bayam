@@ -10,6 +10,7 @@ const hamaRoutes = require('./routes/hamaRoutes');
 const penyakitRoutes = require('./routes/penyakitRoutes');
 const ruleRoutes = require('./routes/ruleRoutes');
 const ruleHamaRoutes = require('./routes/ruleHamaRoutes');
+const diagnosaRoute = require('./routes/diagnosaRoutes');
 const swaggerDocs = require('./swagger'); 
 
 dotenv.config();
@@ -33,6 +34,7 @@ app.use("/api/hama", hamaRoutes);
 app.use("/api/penyakit", penyakitRoutes);
 app.use("/api/rules_penyakit", ruleRoutes);
 app.use("/api/rules_hama", ruleHamaRoutes);
+app.use("/api/diagnosa", diagnosaRoute);
 
 
 // Swagger Documentation

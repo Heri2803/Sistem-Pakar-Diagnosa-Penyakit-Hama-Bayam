@@ -15,8 +15,7 @@ class Rule_hama extends Model {
     Rule_hama.belongsTo(models.Hama, {
       foreignKey: 'id_hama',
       as: 'hama',
-    });
-
+    }); 
   }
 }
 

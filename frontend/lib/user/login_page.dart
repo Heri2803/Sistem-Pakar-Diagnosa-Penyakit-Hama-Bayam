@@ -16,6 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  
 
   Future<void> _login() async {
     setState(() {
@@ -53,6 +54,7 @@ class _LoginPageState extends State<LoginPage> {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', responseData['token']);
         await prefs.setString('role', responseData['role']);
+        await prefs.setString('email', email);
 
         // Redirect berdasarkan role
         if (responseData['role'] == 'admin') {
