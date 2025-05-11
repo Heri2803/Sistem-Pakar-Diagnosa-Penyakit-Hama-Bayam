@@ -11,9 +11,15 @@ const roleMiddleware = (roles) => {
     }
 
     try {
+      // Log token untuk memastikan diterima
+      console.log('Token diterima:', token);
+
       // Verify the token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = decoded;
+
+      // Log decoded token
+      console.log('Decoded Token:', decoded);
 
       // Check if the user has one of the allowed roles
       if (roles.includes(req.user.role)) {
@@ -26,5 +32,6 @@ const roleMiddleware = (roles) => {
     }
   };
 };
+
 
 module.exports = roleMiddleware;

@@ -1,7 +1,10 @@
-const { Rule_penyakit, Rule_hama, Gejala, Penyakit, Hama } = require('../models');
+const { Rule_penyakit, Rule_hama, Gejala, Penyakit, Hama, Histori } = require('../models');
+const moment = require('moment');
 
 exports.diagnosa = async (req, res) => {
   const { gejala } = req.body; // array of id_gejala
+  const userId = req.user?.id; // Use optional chaining to avoid errors if req.user is undefined
+  const tanggal_diagnosa = moment().format('YYYY-MM-DD');
 
   if (!gejala || !Array.isArray(gejala)) {
     return res.status(400).json({ message: 'Gejala harus berupa array' });
@@ -195,6 +198,63 @@ exports.diagnosa = async (req, res) => {
       where: { id: gejala },
       attributes: ['id', 'kode', 'nama']
     });
+
+    if (!userId) {
+      console.error('ID user tidak ditemukan pada request. Histori tidak dapat disimpan.');
+    } else {
+      const idGejalaDipilih = gejala;
+      const semuaHasil = [...hasilPenyakit, ...hasilHama];
+      
+      if (semuaHasil.length > 0) {
+        const hasilTerbesar = semuaHasil.reduce((max, current) => {
+          return current.probabilitas > max.probabilitas ? current : max;
+        });
+    
+        // Base histori data without id_gejala
+        const baseHistoriData = {
+          userId: userId,
+          tanggal_diagnosa: tanggal_diagnosa,
+          hasil: hasilTerbesar.probabilitas
+        };
+    
+        if (hasilTerbesar.id_penyakit) {
+          baseHistoriData.id_penyakit = hasilTerbesar.id_penyakit;
+        } else if (hasilTerbesar.id_hama) {
+          baseHistoriData.id_hama = hasilTerbesar.id_hama;
+        }
+    
+        try {
+          // Option 1: Store only the first gejala ID if we're limited to one record
+          // if (idGejalaDipilih.length > 0) {
+          //   await Histori.create({
+          //     ...baseHistoriData,
+          //     id_gejala: parseInt(idGejalaDipilih[0]) // Store as integer
+          //   }, { timestamps: false });
+          //   console.log('Histori berhasil disimpan dengan gejala utama');
+          // }
+          
+          // Option 2 (Uncomment if you want to create multiple records):
+          
+          // Create multiple records - one for each gejala
+          const historiPromises = idGejalaDipilih.map(gejalaId => {
+            return Histori.create({
+              ...baseHistoriData,
+              id_gejala: parseInt(gejalaId) // Store as integer
+            }, { timestamps: false });
+          });
+          
+          await Promise.all(historiPromises);
+          console.log(`Histori berhasil disimpan untuk ${idGejalaDipilih.length} gejala`);
+          
+          
+        } catch (error) {
+          console.error('Gagal menyimpan histori:', error.message);
+        }
+      } else {
+        console.log('Tidak ada hasil untuk disimpan ke histori.');
+      }
+    }
+
 
     // Kirim hasil perhitungan sebagai respons
     res.json({

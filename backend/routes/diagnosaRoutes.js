@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { diagnosa } = require('../controller/diagnosaController');
+const roleMiddleware = require('../middleware/roleMiddleware');
 console.log('Diagnosa function:', diagnosa); 
 
 /**
@@ -9,6 +10,8 @@ console.log('Diagnosa function:', diagnosa);
  *   post:
  *     summary: Melakukan diagnosa penyakit dan hama menggunakan Teorema Bayes
  *     tags: [Diagnosa]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -152,6 +155,6 @@ console.log('Diagnosa function:', diagnosa);
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.post('/', diagnosa);
+router.post('/', roleMiddleware(['user', 'admin']), diagnosa);
 
 module.exports = router;
