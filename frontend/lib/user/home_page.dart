@@ -4,10 +4,36 @@ import 'diagnosa_page.dart';
 import 'riwayat_diagnosa_page.dart';
 import 'profile_page.dart';
 import 'basis_pengetahuan_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
 
+class _HomePageState extends State<HomePage> {
+  String userId = '';  // Variabel untuk menyimpan userId
+
+  @override
+  void initState() {
+    super.initState();  
+  }
+
+  Future<void> navigateToRiwayatDiagnosaPage(BuildContext context) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final userId = prefs.getString('userId') ?? '';
+
+  print("Navigating to RiwayatDiagnosaPage with userId: $userId");
+
+  if (userId.isEmpty) {
+    print("Error: User ID tidak ditemukan di SharedPreferences");
+    // Tampilkan pesan error atau arahkan ke halaman login
+    return;
+  }
+  }
+
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,21 +115,25 @@ class HomePage extends StatelessWidget {
                         height: 48,
                       ),
                       onTap: () {
+                        navigateToRiwayatDiagnosaPage(context); 
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => RiwayatDiagnosaPage(),
-                          ), // Perbaikan di sini
+                            builder:
+                                (context) => RiwayatDiagnosaPage(
+                                  userId: userId,
+                                ), // Kirimkan userId sebagai String
+                          ),
                         );
                       },
                     ),
                     ButtonMenu(
                       title: "Profile",
                       customIcon: Image.asset(
-                    'assets/images/Test Account.png',
-                    width: 48,
-                    height: 48,
-                  ),
+                        'assets/images/Test Account.png',
+                        width: 48,
+                        height: 48,
+                      ),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -122,10 +152,10 @@ class HomePage extends StatelessWidget {
                     ButtonMenu(
                       title: "Basis Pengetahuan",
                       customIcon: Image.asset(
-                    'assets/images/Literature.png',
-                    width: 48,
-                    height: 48,
-                  ),
+                        'assets/images/Literature.png',
+                        width: 48,
+                        height: 48,
+                      ),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -194,11 +224,11 @@ class ButtonMenu extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            customIcon, 
+            customIcon,
             const SizedBox(height: 5),
             Text(
               title,
-              textAlign: TextAlign.center, 
+              textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],

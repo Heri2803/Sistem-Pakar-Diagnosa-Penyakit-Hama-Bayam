@@ -65,6 +65,8 @@ exports.login = async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
         );
 
+        console.log("User ID dari backend:", user.id);
+
         // 🔹 Kirim response dengan token dan role
         res.status(200).json({
             message: "Login berhasil",

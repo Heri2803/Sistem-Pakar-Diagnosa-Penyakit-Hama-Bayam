@@ -51,10 +51,12 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         // Simpan token & role ke SharedPreferences
-        SharedPreferences prefs = await SharedPreferences.getInstance();
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        print("User ID dari respons login: ${responseData['userId']}");
         await prefs.setString('token', responseData['token']);
         await prefs.setString('role', responseData['role']);
         await prefs.setString('email', email);
+        await prefs.setString('userId', responseData['userId'].toString()); 
 
         // Redirect berdasarkan role
         if (responseData['role'] == 'admin') {

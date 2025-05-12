@@ -15,37 +15,31 @@ class ApiService {
   static const String rulesHamaUrl = 'http://localhost:5000/api/rules_hama';
   static const String userUrl = 'http://localhost:5000/api/users';
   static const String diagnosaUrl = 'http://localhost:5000/api/diagnosa';
+  static const String historiUrl = 'http://localhost:5000/api/histori';
   static const Duration timeout = Duration(seconds: 15);
 
 /// Fungsi untuk mengirim gejala dan menerima hasil diagnosa
-// Kirim gejala dan dapatkan hasil diagnosa
-  Future<Map<String, dynamic>> diagnosa(List<String> gejalIds) async {
-    // Konversi string ID menjadi integer jika backend Anda membutuhkan integer
-    List<int> gejalaNumerik = [];
-    try {
-      gejalaNumerik = gejalIds.map((id) => int.parse(id)).toList();
-    } catch (e) {
-      print("Error saat konversi ID gejala ke integer: $e");
-      // Jika konversi gagal, gunakan ID string saja
-      final response = await http.post(
-        Uri.parse('$diagnosaUrl'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'gejala': gejalIds}),
-      );
+Future<Map<String, dynamic>> diagnosa(List<String> gejalaIds) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
 
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        throw Exception('Gagal melakukan diagnosa: ${response.statusCode} - ${response.body}');
-      }
+    List<dynamic> parsedGejala;
+    try {
+      // Coba konversi ke integer jika bisa
+      parsedGejala = gejalaIds.map((id) => int.parse(id)).toList();
+    } catch (e) {
+      print("Konversi ke integer gagal, gunakan string ID.");
+      parsedGejala = gejalaIds;
     }
 
-    // Jika konversi berhasil, gunakan ID numerik
     final response = await http.post(
-      Uri.parse('$diagnosaUrl'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'gejala': gejalaNumerik}),
-    );
+      Uri.parse(diagnosaUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: json.encode({'gejala': parsedGejala}),
+    ).timeout(timeout);
 
     if (response.statusCode == 200) {
       return json.decode(response.body);
@@ -54,32 +48,108 @@ class ApiService {
     }
   }
 
+Future<List<Map<String, dynamic>>> getHistoriDiagnosa(String userId) async {
+  try {
+    // Ambil token dari SharedPreferences
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token == null || token.isEmpty) {
+      throw Exception("Token tidak valid");
+    }
+
+    final url = '$historiUrl/user/$userId';
+    print("Fetching histori from URL: $url");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    print("Response Status Code: ${response.statusCode}");
+    print("Response Body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+
+      if (responseData.containsKey('data') && responseData['data'] is List) {
+        return List<Map<String, dynamic>>.from(responseData['data']);
+      } else {
+        throw Exception('Format respons tidak valid.');
+      }
+    } else {
+      throw Exception('Gagal memuat histori: ${response.statusCode}');
+    }
+  } catch (e) {
+    print("Error fetching data: $e");
+    throw Exception('Terjadi kesalahan saat mengambil histori: $e');
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchHistoriDenganDetail(String userId) async {
+  try {
+    // Panggil API untuk mendapatkan data histori
+    final historiResponse = await getHistoriDiagnosa(userId);
+
+    // Proses data histori
+    List<Map<String, dynamic>> result = historiResponse.map((histori) {
+      // Tangani properti null dengan default value
+      final gejala = histori['gejala'] ?? {};
+      final penyakit = histori['penyakit'] ?? {};
+      final hama = histori['hama'] ?? {};
+
+      return {
+        "id": histori['id'],
+        "userId": histori['userId'],
+        "tanggal_diagnosa": histori['tanggal_diagnosa'],
+        "hasil": histori['hasil'],
+        "gejala_nama": gejala['nama'] ?? "Tidak diketahui",
+        "penyakit_nama": penyakit['nama'] ,
+        "hama_nama": hama['nama'] ,
+      };
+    }).toList();
+
+    print("Processed Histori Data: $result");
+    return result;
+  } catch (e) {
+    print("Error fetching histori dengan detail: $e");
+    return [];
+  }
+}
+
 
   // Fungsi Login (dengan perbaikan)
   static Future<Map<String, dynamic>> loginUser(
-    String email,
-    String password,
-  ) async {
-    try {
-      final response = await http.post(
-        Uri.parse("$baseUrl/login"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({'email': email, 'password': password}),
-      );
+  String email,
+  String password,
+) async {
+  try {
+    final response = await http.post(
+      Uri.parse("$baseUrl/login"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({'email': email, 'password': password}),
+    );
 
-      print("Response Status: ${response.statusCode}");
-      print("Response Body: ${response.body}");
+    print("Response Status: ${response.statusCode}");
+    print("Response Body: ${response.body}");
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception("Login gagal: ${response.body}");
-      }
-    } catch (e) {
-      print("Error: $e");
-      throw Exception("Terjadi kesalahan saat login");
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+
+      // Simpan userId ke SharedPreferences
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      print("User ID dari respons login: ${responseData['userId']}"); // Tambahkan log
+      await prefs.setString('userId', responseData['userId'].toString());
+
+      return responseData;
+    } else {
+      throw Exception("Login gagal: ${response.body}");
     }
+  } catch (e) {
+    print("Error: $e");
+    throw Exception("Terjadi kesalahan saat login");
   }
+}
 
   // Fungsi Logout
   static Future<void> logoutUser() async {
@@ -282,7 +352,6 @@ class ApiService {
     return null;
   }
 }
-
 
   // Tambah hama baru (kode otomatis)
   Future<Map<String, dynamic>> createHama(
