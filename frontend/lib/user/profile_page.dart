@@ -17,6 +17,13 @@ class _ProfilPageState extends State<ProfilPage> {
   String? errorMessage;
   String? userRole;
 
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _alamatController = TextEditingController();
+  final _nomorTeleponController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -24,6 +31,17 @@ class _ProfilPageState extends State<ProfilPage> {
     if (userData == null) {
       _loadUserData();
     }
+  }
+
+  @override
+  void dispose() {
+    // Dispose controllers when the widget is removed from the widget tree
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _alamatController.dispose();
+    _nomorTeleponController.dispose();
+    super.dispose();
   }
 
   // Fungsi untuk memuat data pengguna yang login
@@ -81,7 +99,6 @@ class _ProfilPageState extends State<ProfilPage> {
           userData = currentUser;
           userRole = currentUser?['role']; // safe access
           isLoading = false;
-          print('User dengan email $email tidak ditemukan di response');
         });
       } else if (response.statusCode == 401) {
         // Token tidak valid atau expired
@@ -111,6 +128,136 @@ class _ProfilPageState extends State<ProfilPage> {
         context,
       ).showSnackBar(SnackBar(content: Text("Gagal logout: ${e.toString()}")));
     }
+  }
+
+  void _showUpdateProfileDialog() {
+    // Pre-fill form with current user data
+    _nameController.text = userData?['name'] ?? '';
+    _emailController.text = userData?['email'] ?? '';
+    _alamatController.text = userData?['alamat'] ?? '';
+    _nomorTeleponController.text = userData?['nomorTelepon'] ?? '';
+    _passwordController.text = ''; // Empty for security
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Update Profil'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: InputDecoration(labelText: 'Nama'),
+                      validator:
+                          (value) =>
+                              value?.isEmpty ?? true
+                                  ? 'Nama tidak boleh kosong'
+                                  : null,
+                    ),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(labelText: 'Email'),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true)
+                          return 'Email tidak boleh kosong';
+                        if (!value!.contains('@')) return 'Email tidak valid';
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: InputDecoration(
+                        labelText: 'Password Baru',
+                        helperText:
+                            'Kosongkan jika tidak ingin mengubah password',
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value?.isNotEmpty ?? false) {
+                          if (value!.length < 6)
+                            return 'Password minimal 6 karakter';
+                        }
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: _alamatController,
+                      decoration: InputDecoration(labelText: 'Alamat'),
+                      validator:
+                          (value) =>
+                              value?.isEmpty ?? true
+                                  ? 'Alamat tidak boleh kosong'
+                                  : null,
+                    ),
+                    TextFormField(
+                      controller: _nomorTeleponController,
+                      decoration: InputDecoration(labelText: 'Nomor Telepon'),
+                      keyboardType: TextInputType.phone,
+                      validator:
+                          (value) =>
+                              value?.isEmpty ?? true
+                                  ? 'Nomor telepon tidak boleh kosong'
+                                  : null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    try {
+                      final apiService = ApiService();
+                      await apiService.updateUser(
+                        id: userData!['id'],
+                        name: _nameController.text,
+                        email: _emailController.text,
+                        password:
+                            _passwordController.text.isEmpty
+                                ? null
+                                : _passwordController.text,
+                        alamat: _alamatController.text,
+                        nomorTelepon: _nomorTeleponController.text,
+                      );
+
+                      Navigator.pop(context);
+                      await _loadUserData(); // Refresh profile data
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Profil berhasil diperbarui'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Gagal memperbarui profil: ${e.toString()}',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF9DC08D),
+                ),
+                child: Text('Update'),
+              ),
+            ],
+          ),
+    );
   }
 
   @override
@@ -184,16 +331,7 @@ class _ProfilPageState extends State<ProfilPage> {
 
                   // Button untuk update data profil
                   ElevatedButton(
-                    onPressed: () {
-                      // Aksi ketika button ditekan (misalnya membuka halaman update data)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            "Fitur Update Profil Sedang Dikembangkan",
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: _showUpdateProfileDialog,
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -293,23 +431,11 @@ class _ProfilPageState extends State<ProfilPage> {
         Divider(color: Colors.black),
         _buildProfileItem("Email: ${userData?['email'] ?? '-'}"),
         Divider(color: Colors.black),
-        _buildProfileItem("Password: ${userData?['password'] ?? '-'}"),
-        Divider(color: Colors.black),
         _buildProfileItem("Alamat: ${userData?['alamat'] ?? '-'}"),
-          Divider(color: Colors.black),
-        ],
-      
+        Divider(color: Colors.black),
+        _buildProfileItem("Nomor Telepon: ${userData?['nomorTelepon'] ?? '-'}"),
+      ],
     );
-  }
-
-  // Fungsi untuk memformat tanggal
-  String _formatDate(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return "${date.day}/${date.month}/${date.year}";
-    } catch (e) {
-      return dateString;
-    }
   }
 
   // Fungsi untuk membuat item dalam Card box

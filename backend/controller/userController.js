@@ -66,39 +66,70 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// Mengupdate berdasarkan email 
+// Mengupdate berdasarkan ID
 exports.updateUserEmail = async (req, res) => {
-    try {
-        const { email, name, alamat, nomorTelepon, newPassword } = req.body;
-    
-        if (!email) {
-          return res.status(400).json({ message: "Email harus disertakan" });
-        }
-    
-        const user = await User.findOne({ where: { email } });
-    
-        if (!user) {
-          return res.status(404).json({ message: "User tidak ditemukan" });
-        }
-    
-        let hashedPassword = user.password;
-        if (newPassword) {
-          hashedPassword = await argon2.hash(newPassword);
-        }
-    
-        await user.update({
-          name: name || user.name,
-          alamat: alamat || user.alamat,
-          nomorTelepon: nomorTelepon || user.nomorTelepon,
-          password: hashedPassword,
-        });
-    
-        res.status(200).json({ message: "User berhasil diperbarui", user });
-      } catch (error) {
-        res.status(500).json({ message: "Terjadi kesalahan pada server", error });
+  try {
+      const { id } = req.params;
+      const { name, email, alamat, nomorTelepon, password } = req.body;
+  
+      if (!id) {
+        return res.status(400).json({ message: "ID harus disertakan" });
       }
-    };
+  
+      const user = await User.findByPk(id);
+  
+      if (!user) {
+        return res.status(404).json({ message: "User tidak ditemukan" });
+      }
 
+      // Check email uniqueness
+      if (email && email !== user.email) {
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+          return res.status(400).json({ message: "Email sudah digunakan" });
+        }
+      }
+  
+      // Hash password if provided
+      let hashedPassword = user.password;
+      if (password) {
+        hashedPassword = await argon2.hash(password);
+      }
+  
+      await user.update({
+        name: name || user.name,
+        email: email || user.email,
+        alamat: alamat || user.alamat,
+        nomorTelepon: nomorTelepon || user.nomorTelepon,
+        password: hashedPassword,
+      });
+  
+      // Updated response object
+      const userResponse = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        alamat: user.alamat,
+        nomorTelepon: user.nomorTelepon,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        passwordUpdated: Boolean(password) // Menggunakan Boolean untuk mengkonversi ke true/false
+      };
+  
+      res.status(200).json({ 
+        message: "User berhasil diperbarui", 
+        user: userResponse 
+      });
+
+    } catch (error) {
+      console.error('Update user error:', error);
+      res.status(500).json({ 
+        message: "Terjadi kesalahan pada server", 
+        error: error.message 
+      });
+    }
+};
 
 // Menghapus user berdasarkan ID (soft delete)
 exports.deleteUser = async (req, res) => {

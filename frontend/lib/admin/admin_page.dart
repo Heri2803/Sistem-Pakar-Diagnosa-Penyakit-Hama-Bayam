@@ -4,8 +4,11 @@ import 'hama_page.dart';
 import 'penyakit_page.dart';
 import 'gejala_page.dart';
 import 'rule_page.dart';
+import 'user_list_page.dart';
+import 'admin_histori_page.dart';
 import 'package:frontend/api_services/api_services.dart';
 import 'package:frontend/user/login_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminPage extends StatefulWidget {
   @override
@@ -19,52 +22,85 @@ class _AdminPageState extends State<AdminPage> {
   int diseaseCount = 0;
   int pestCount = 0;
   bool isLoading = true;
+  int _lastKnownDiagnosisCount = 0;
+  static const String DIAGNOSIS_COUNT_KEY = 'diagnosis_count';
+  static const String LAST_KNOWN_COUNT_KEY = 'last_known_count';
 
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+    _loadSavedCounts();
+  }
+
+  // Pindahkan method ke luar dari _loadDashboardData
+  Future<void> _loadSavedCounts() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      diagnosisCount = prefs.getInt(DIAGNOSIS_COUNT_KEY) ?? 0;
+      _lastKnownDiagnosisCount = prefs.getInt(LAST_KNOWN_COUNT_KEY) ?? 0;
+    });
+  }
+
+  Future<void> _saveCounts() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(DIAGNOSIS_COUNT_KEY, diagnosisCount);
+    await prefs.setInt(LAST_KNOWN_COUNT_KEY, _lastKnownDiagnosisCount);
   }
 
   // Method untuk memuat data dashboard dari API
   Future<void> _loadDashboardData() async {
-  try {
-    setState(() {
-      isLoading = true;
-    });
+    try {
+      setState(() {
+        isLoading = true;
+      });
 
-    print("Fetching users with role 'user'...");
+      print("Fetching users with role 'user'...");
 
-    // Mengambil jumlah user dengan role 'user'
-    final userList = await ApiService().getUsers(role: 'user');
-    if (userList != null && userList.isNotEmpty) {
-      userCount = userList.length;
-      print("Jumlah user: $userCount");
-    } else {
-      print("Tidak ada user dengan role 'user'.");
+      // Mengambil jumlah user dengan role 'user'
+      final userList = await ApiService().getUsers(role: 'user');
+      if (userList != null && userList.isNotEmpty) {
+        userCount = userList.length;
+        print("Jumlah user: $userCount");
+      } else {
+        print("Tidak ada user dengan role 'user'.");
+      }
+
+      print("Fetching data penyakit...");
+      // Mengambil data penyakit menggunakan fungsi yang sudah ada
+      final penyakitList = await ApiService().getPenyakit();
+      diseaseCount = penyakitList.length;
+      print("Jumlah penyakit: $diseaseCount");
+
+      print("Fetching data hama...");
+      // Mengambil data hama menggunakan fungsi yang sudah ada
+      final hamaList = await ApiService().getHama();
+      pestCount = hamaList.length;
+      print("Jumlah hama: $pestCount");
+
+      // Modified diagnosis count logic
+      final allHistori = await ApiService().getAllHistori();
+      int currentCount = allHistori.length;
+
+      if (currentCount > _lastKnownDiagnosisCount) {
+        int newDiagnoses = currentCount - _lastKnownDiagnosisCount;
+        diagnosisCount += newDiagnoses;
+        _lastKnownDiagnosisCount = currentCount;
+
+        // Save the updated counts
+        await _saveCounts();
+
+        print("New diagnoses added: $newDiagnoses");
+        print("Total diagnosis count: $diagnosisCount");
+      }
+    } catch (e) {
+      print("Error loading dashboard data: $e");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
-
-    print("Fetching data penyakit...");
-    // Mengambil data penyakit menggunakan fungsi yang sudah ada
-    final penyakitList = await ApiService().getPenyakit();
-    diseaseCount = penyakitList.length;
-    print("Jumlah penyakit: $diseaseCount");
-
-    print("Fetching data hama...");
-    // Mengambil data hama menggunakan fungsi yang sudah ada
-    final hamaList = await ApiService().getHama();
-    pestCount = hamaList.length;
-    print("Jumlah hama: $pestCount");
-
-  } catch (e) {
-    print("Error loading dashboard data: $e");
-  } finally {
-    setState(() {
-      isLoading = false;
-    });
   }
-}
-
 
   Future<void> _logout(BuildContext context) async {
     await ApiService.logoutUser();
@@ -131,6 +167,24 @@ class _AdminPageState extends State<AdminPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => RulePage()),
+                  );
+                },
+              ),
+              // ListTile(
+              //   title: Text('Halaman Histori User'),
+              //   onTap: () {
+              //     Navigator.push(
+              //       context,
+              //       MaterialPageRoute(builder: (context) => AdminHistoriPage()),
+              //     );
+              //   },
+              // ),
+              ListTile(
+                title: Text('Data Pengguna'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => UserListPage()),
                   );
                 },
               ),

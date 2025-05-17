@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/user/home_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:frontend/api_services/api_services.dart';
@@ -37,20 +38,17 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Extract data from the nested structure
+    final data = widget.hasilDiagnosa['data'] ?? {};
+    final List<dynamic> penyakitList = data['penyakit'] ?? [];
+    final List<dynamic> hamaList = data['hama'] ?? [];
+    final Map<String, dynamic>? hasilTertinggi = data['hasil_tertinggi'];
+
     // Get the first penyakit and hama (if any)
-    Map<String, dynamic>? firstPenyakit;
-    Map<String, dynamic>? firstHama;
-
-    List<dynamic> penyakitList = widget.hasilDiagnosa['penyakit'] ?? [];
-    List<dynamic> hamaList = widget.hasilDiagnosa['hama'] ?? [];
-
-    if (penyakitList.isNotEmpty) {
-      firstPenyakit = penyakitList.first;
-    }
-
-    if (hamaList.isNotEmpty) {
-      firstHama = hamaList.first;
-    }
+    Map<String, dynamic>? firstPenyakit =
+        penyakitList.isNotEmpty ? penyakitList.first : null;
+    Map<String, dynamic>? firstHama =
+        hamaList.isNotEmpty ? hamaList.first : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -58,6 +56,33 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
         backgroundColor: Color(0xFFEDF1D6),
         foregroundColor: Color(0xFF40513B),
       ),
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.all(16),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF40513B),
+            padding: EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => HomePage()),
+            );
+          },
+          child: Text(
+            'Selesai Diagnosa',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+
       body: Container(
         color: Color(0xFFEDF1D6),
         child:
@@ -177,18 +202,12 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
       print('\n=== DEBUG - STARTING DATA FETCH ===');
       print('DEBUG - hasilDiagnosa input: ${widget.hasilDiagnosa}');
 
-      // Fetch all disease and pest data first
+      // Fetch all disease and pest data
       print('DEBUG - Fetching all penyakit and hama data from API...');
-      // Fetch all disease and pest data first
       semuaPenyakit = await _apiService.getPenyakit();
       semuaHama = await _apiService.getHama();
 
       print('\nDEBUG - API Data Summary:');
-      print(
-        'Fetched ${semuaPenyakit.length} penyakit and ${semuaHama.length} hama from API',
-      );
-
-      // Debug log what we got from the API
       print(
         'Fetched ${semuaPenyakit.length} penyakit and ${semuaHama.length} hama from API',
       );
@@ -200,11 +219,11 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
       // Process diseases
       for (var penyakit in penyakitList) {
         // Make sure the ID exists and convert to string for consistent comparison
-        var penyakitId = penyakit['id'];
+        var penyakitId = penyakit['id_penyakit'];
         if (penyakitId == null) continue;
-        print('\nDEBUG - Sample penyakit from API:');
 
         String penyakitIdStr = penyakitId.toString();
+        print('DEBUG - Processing penyakit ID: $penyakitIdStr');
 
         // Find the matching disease in our complete list
         var detail = semuaPenyakit.firstWhere(
@@ -213,24 +232,36 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
         );
 
         if (detail.isNotEmpty) {
-          // Store the complete details
-          penyakitDetails[penyakitIdStr] = {...detail};
+          // Convert probabilitas_persen (0-100) to probabilitas (0-1)
+          double probability = 0.0;
+          if (penyakit.containsKey('probabilitas_persen')) {
+            probability =
+                (penyakit['probabilitas_persen'] as num).toDouble() / 100;
+          } else if (penyakit.containsKey('nilai_bayes')) {
+            probability = (penyakit['nilai_bayes'] as num).toDouble();
+          }
 
-          // Debug log
-          print(
-            'Found details for penyakit ID $penyakitIdStr: ${penyakitDetails[penyakitIdStr]}',
-          );
+          // Store the complete details with normalized probability
+          penyakitDetails[penyakitIdStr] = {
+            ...detail,
+            'probabilitas': probability,
+            'id_penyakit': penyakitIdStr,
+          };
+
+          final nama =
+              penyakitDetails[penyakitIdStr]?['nama'] ?? 'Nama tidak ditemukan';
+          print('DEBUG - Found details for penyakit ID $penyakitIdStr: $nama');
         }
       }
 
       // Process pests
       for (var hama in hamaList) {
         // Make sure the ID exists and convert to string for consistent comparison
-        var hamaId = hama['id'];
+        var hamaId = hama['id_hama'];
         if (hamaId == null) continue;
 
         String hamaIdStr = hamaId.toString();
-        print('\nDEBUG - Sample hama from API:');
+        print('DEBUG - Processing hama ID: $hamaIdStr');
 
         // Find the matching pest in our complete list
         var detail = semuaHama.firstWhere(
@@ -239,13 +270,24 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
         );
 
         if (detail.isNotEmpty) {
-          // Store the complete details
-          hamaDetails[hamaIdStr] = {...detail};
+          // Convert probabilitas_persen (0-100) to probabilitas (0-1)
+          double probability = 0.0;
+          if (hama.containsKey('probabilitas_persen')) {
+            probability = (hama['probabilitas_persen'] as num).toDouble() / 100;
+          } else if (hama.containsKey('nilai_bayes')) {
+            probability = (hama['nilai_bayes'] as num).toDouble();
+          }
 
-          // Debug log
-          print(
-            'Found details for hama ID $hamaIdStr: ${hamaDetails[hamaIdStr]}',
-          );
+          // Store the complete details with normalized probability
+          hamaDetails[hamaIdStr] = {
+            ...detail,
+            'probabilitas': probability,
+            'id_hama': hamaIdStr,
+          };
+
+          final nama =
+              hamaDetails[hamaIdStr]?['nama'] ?? 'Nama tidak ditemukan';
+          print('DEBUG - Found details for hama ID $hamaIdStr: $nama');
         }
       }
     } catch (e) {
@@ -265,13 +307,11 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
   ) {
     // Create a new map for the result
     Map<String, dynamic> result = {...item};
-    // Debug input item
-    print('DEBUG - _getCompleteItemData input item: $item');
-    print('DEBUG - _getCompleteItemData type: $type');
 
-    // Get the ID and make sure it's a string
+    // Get the ID based on the correct field name from backend
     var id = type == 'penyakit' ? item['id_penyakit'] : item['id_hama'];
-    print('DEBUG - ID from item: $id (${id?.runtimeType})');
+
+    print('DEBUG - _getCompleteItemData type: $type, id: $id');
     if (id == null) {
       print('DEBUG - ID is null, returning original item');
       return result;
@@ -282,78 +322,74 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
     // Get the detailed information based on type
     Map<String, dynamic>? details;
     if (type == 'penyakit') {
-      print('DEBUG - Looking for penyakit details with ID: $idStr');
-      print('DEBUG - Available penyakit keys: ${penyakitDetails.keys}');
       details = penyakitDetails[idStr];
-      print('DEBUG - Found penyakit details: $details');
 
-      // Check raw API data if not found
+      // If not found in our cached details, try to find it in the API data
       if (details == null || details.isEmpty) {
-        print('DEBUG - Checking raw API data for penyakit ID: $idStr');
-        for (var p in semuaPenyakit) {
-          print(
-            '  Checking penyakit with ID ${p['id']} (${p['id'].runtimeType})',
-          );
-          if (p['id'].toString() == idStr) {
-            print('  MATCH FOUND in raw API data: $p');
-            details = p;
-            break;
-          }
+        print(
+          'DEBUG - No cached details for penyakit ID: $idStr, searching API data...',
+        );
+        details = semuaPenyakit.firstWhere(
+          (p) => p['id'].toString() == idStr,
+          orElse: () => <String, dynamic>{},
+        );
+
+        if (details.isNotEmpty) {
+          // Cache for future use
+          penyakitDetails[idStr] = {...details};
         }
       }
     } else if (type == 'hama') {
-      print('DEBUG - Looking for hama details with ID: $idStr');
-      print('DEBUG - Available hama keys: ${hamaDetails.keys}');
       details = hamaDetails[idStr];
-      print('DEBUG - Found hama details: $details');
 
-      // Check raw API data if not found
+      // If not found in our cached details, try to find it in the API data
       if (details == null || details.isEmpty) {
-        print('DEBUG - Checking raw API data for hama ID: $idStr');
-        for (var h in semuaHama) {
-          print('  Checking hama with ID ${h['id']} (${h['id'].runtimeType})');
-          if (h['id'].toString() == idStr) {
-            print('  MATCH FOUND in raw API data: $h');
-            details = h;
-            break;
-          }
+        print(
+          'DEBUG - No cached details for hama ID: $idStr, searching API data...',
+        );
+        details = semuaHama.firstWhere(
+          (h) => h['id'].toString() == idStr,
+          orElse: () => <String, dynamic>{},
+        );
+
+        if (details.isNotEmpty) {
+          // Cache for future use
+          hamaDetails[idStr] = {...details};
         }
       }
     }
 
     // If we have details, merge them with the result
     if (details != null && details.isNotEmpty) {
-      print('DEBUG - Merging details into result:');
-      print('  Original result before merge: $result');
-      print('  Details to merge: $details');
-      // Make sure details have priority but preserve the original probabilitas
-      double? originalProbabilitas =
-          result['probabilitas'] is num
-              ? (result['probabilitas'] as num).toDouble()
-              : null;
+      print('DEBUG - Found details for $type ID $idStr: ${details['nama']}');
 
-      // Merge the details
-      result.addAll(details);
+      // Calculate probability (convert from percentage if needed)
+      double probability = 0.0;
 
-      // Restore original probabilitas if it existed
-      if (originalProbabilitas != null) {
-        result['probabilitas'] = originalProbabilitas;
+      // First check our original item
+      if (item.containsKey('probabilitas_persen')) {
+        probability = (item['probabilitas_persen'] as num).toDouble() / 100;
+      } else if (item.containsKey('nilai_bayes')) {
+        probability = (item['nilai_bayes'] as num).toDouble();
+      } else if (item.containsKey('probabilitas')) {
+        probability = _getProbabilitas(item);
       }
-      print('DEBUG - Final merged result: $result');
 
-      // Specifically check key fields
-      print('DEBUG - Key fields in result:');
-      print('  nama: ${result['nama']} (${result['nama']?.runtimeType})');
-      print(
-        '  deskripsi: ${result['deskripsi']} (${result['deskripsi']?.runtimeType})',
-      );
-      print(
-        '  penanganan: ${result['penanganan']} (${result['penanganan']?.runtimeType})',
-      );
-      print('  foto: ${result['foto']} (${result['foto']?.runtimeType})');
+      // Merge all the details
+      result = {
+        ...details,
+        ...result,
+        'probabilitas': probability,
+        // Make sure these IDs are consistent
+        'id': idStr,
+        type == 'penyakit' ? 'id_penyakit' : 'id_hama': idStr,
+      };
 
-      // Debug log
-      print('Complete data for $type ID $idStr: $result');
+      print(
+        'DEBUG - Final data for $type ID $idStr (${result['nama']}): probabilitas=${result['probabilitas']}',
+      );
+    } else {
+      print('DEBUG - No details found for $type ID $idStr');
     }
 
     return result;
@@ -659,31 +695,42 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
   }
 
   double _getProbabilitas(Map<String, dynamic>? item) {
-    // If item is null or doesn't contain probabilitas, return 0.0
-    if (item == null ||
-        !item.containsKey('probabilitas') ||
-        item['probabilitas'] == null) {
+    // If item is null, return 0.0
+    if (item == null) {
       return 0.0;
     }
 
-    // Handle different types of probabilitas value
-    var probValue = item['probabilitas'];
-
-    if (probValue is double) {
-      return probValue;
-    } else if (probValue is int) {
-      return probValue.toDouble();
-    } else if (probValue is String) {
-      return double.tryParse(probValue) ?? 0.0;
-    } else {
-      // For any other type, try to convert to string first then parse
-      try {
-        return double.tryParse(probValue.toString()) ?? 0.0;
-      } catch (e) {
-        print('Error parsing probabilitas: $e');
-        return 0.0;
+    // Try all possible probability field names from the backend
+    if (item.containsKey('probabilitas_persen')) {
+      // Backend sends percentage (0-100), convert to decimal (0-1)
+      var value = item['probabilitas_persen'];
+      if (value is num) {
+        return value.toDouble() / 100;
+      } else if (value is String) {
+        return (double.tryParse(value) ?? 0.0) / 100;
       }
     }
+
+    // Check for nilai_bayes (already in 0-1 format)
+    if (item.containsKey('nilai_bayes')) {
+      var value = item['nilai_bayes'];
+      if (value is num) {
+        return value.toDouble();
+      } else if (value is String) {
+        return double.tryParse(value) ?? 0.0;
+      }
+    }
+
+    // Finally check for probabilitas field that might exist in our frontend objects
+    if (item.containsKey('probabilitas')) {
+      var value = item['probabilitas'];
+      if (value is num) {
+        return value.toDouble();
+      } else if (value is String) {
+        return double.tryParse(value) ?? 0.0;
+      }
+    }
+    return 0.0;
   }
 }
 

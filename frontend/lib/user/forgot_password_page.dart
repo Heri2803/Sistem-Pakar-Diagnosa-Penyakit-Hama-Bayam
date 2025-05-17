@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/api_services/api_services.dart'; // Pastikan path-nya sesuai
+import 'package:frontend/api_services/api_services.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   @override
@@ -8,22 +8,109 @@ class ForgotPasswordPage extends StatefulWidget {
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController codeController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final ApiService apiService = ApiService();
 
   bool isLoading = false;
+  bool isCodeSent = false;
 
-  void handleForgotPassword() async {
-    setState(() {
-      isLoading = true;
-    });
+  // Fungsi untuk mengirim kode verifikasi
+  void handleSendCode() async {
+    setState(() => isLoading = true);
 
     try {
-      await apiService.forgotPassword(
-        email: emailController.text.trim(),
-        newPassword: passwordController.text.trim(),
+      await apiService.sendResetCode(email: emailController.text.trim());
+      
+      // Tampilkan dialog input kode verifikasi
+      showVerificationDialog();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  // Dialog untuk input kode verifikasi
+  void showVerificationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text('Masukkan Kode Verifikasi'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Kode verifikasi telah dikirim ke email Anda.'),
+            SizedBox(height: 16),
+            TextField(
+              controller: codeController,
+              decoration: InputDecoration(
+                labelText: 'Kode Verifikasi',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: Text('Verifikasi'),
+            onPressed: () {
+              Navigator.pop(context);
+              showNewPasswordDialog();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Dialog untuk input password baru
+  void showNewPasswordDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(
+                labelText: 'Password Baru',
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: Text('Reset'),
+            onPressed: () => handleResetPassword(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Fungsi untuk reset password
+  void handleResetPassword() async {
+    setState(() => isLoading = true);
+
+    try {
+      await apiService.resetPasswordWithCode(
+        code: codeController.text.trim(),
+        password: passwordController.text.trim(),
       );
 
+      Navigator.pop(context); // Tutup dialog password
+      
+      // Tampilkan pesan sukses
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -34,7 +121,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               child: Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop(); // tutup dialog
-                Navigator.of(context).pop(); // kembali ke halaman sebelumnya
+                Navigator.of(context).pop(); // kembali ke halaman login
               },
             ),
           ],
@@ -45,9 +132,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         SnackBar(content: Text(e.toString())),
       );
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 
@@ -71,7 +156,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    Text(
+                      'Masukkan email Anda untuk menerima kode verifikasi',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    SizedBox(height: 20),
                     TextField(
                       controller: emailController,
                       decoration: InputDecoration(
@@ -80,17 +172,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      controller: passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        labelText: 'Password Baru',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
+                      keyboardType: TextInputType.emailAddress,
                     ),
                     SizedBox(height: 20),
                     SizedBox(
@@ -103,11 +185,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: isLoading ? null : handleForgotPassword,
+                        onPressed: isLoading ? null : handleSendCode,
                         child: isLoading
                             ? CircularProgressIndicator(color: Colors.white)
                             : Text(
-                                'Reset Password',
+                                'Kirim Kode Verifikasi',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,

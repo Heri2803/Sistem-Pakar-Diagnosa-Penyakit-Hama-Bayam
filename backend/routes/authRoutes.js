@@ -86,11 +86,12 @@ router.post('/register', authController.register);
  */
 router.post('/login', authController.login);
 
+
 /**
  * @swagger
- * /api/auth/forgot-password:
+ * /api/auth/send-reset-code:
  *   post:
- *     summary: Mengatur ulang password pengguna
+ *     summary: Mengirim kode verifikasi ke email pengguna
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -104,17 +105,70 @@ router.post('/login', authController.login);
  *               email:
  *                 type: string
  *                 example: johndoe@gmail.com
- *               password:
- *                 type: string
- *                 example: mypassword
  *     responses:
  *       200:
- *         description: Password baru telah dibuat
+ *         description: Kode verifikasi telah dikirim ke email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Kode verifikasi telah dikirim ke email Anda.
+ *                 expiresIn:
+ *                   type: string
+ *                   example: 10 minutes
+ *       400:
+ *         description: Email tidak valid
  *       404:
- *         description: Email tidak ditemukan
+ *         description: User tidak ditemukan
  *       500:
  *         description: Terjadi kesalahan server
  */
-router.post('/forgot-password', authController.forgotPassword);
+router.post('/send-reset-code', authController.sendResetCodeWithGmail);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password menggunakan kode verifikasi
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *               - password
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *               password:
+ *                 type: string
+ *                 example: newpassword123
+ *     responses:
+ *       200:
+ *         description: Password berhasil direset
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Password berhasil direset
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: Kode tidak valid atau password tidak memenuhi syarat
+ *       500:
+ *         description: Terjadi kesalahan server
+ */
+router.post('/reset-password', authController.resetPasswordWithCode);
 
 module.exports = router;

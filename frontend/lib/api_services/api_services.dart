@@ -97,6 +97,7 @@ Future<List<Map<String, dynamic>>> fetchHistoriDenganDetail(String userId) async
       final gejala = histori['gejala'] ?? {};
       final penyakit = histori['penyakit'] ?? {};
       final hama = histori['hama'] ?? {};
+      
 
       return {
         "id": histori['id'],
@@ -117,6 +118,44 @@ Future<List<Map<String, dynamic>>> fetchHistoriDenganDetail(String userId) async
   }
 }
 
+
+// Tambahkan fungsi getToken
+Future<String?> getToken() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('token');
+}
+
+// Modifikasi fungsi getAllHistori
+Future<List<Map<String, dynamic>>> getAllHistori() async {
+  try {
+    final token = await getToken();
+    if (token == null) {
+      throw Exception('Token tidak ditemukan');
+    }
+
+    final response = await http.get(
+      Uri.parse('$historiUrl'), // Gunakan historiUrl bukan baseUrl/histori
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token"
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> historiList = responseData['data'];
+      
+      return historiList.map((histori) => histori as Map<String, dynamic>).toList();
+    } else {
+      throw Exception(
+        jsonDecode(response.body)['message'] ?? 'Gagal mengambil data histori'
+      );
+    }
+  } catch (e) {
+    print('Error getting histori: $e');
+    throw Exception('Gagal mengambil data histori: $e');
+  }
+}
 
   // Fungsi Login (dengan perbaikan)
   static Future<Map<String, dynamic>> loginUser(
@@ -867,26 +906,56 @@ Future<List<Map<String, dynamic>>> fetchHistoriDenganDetail(String userId) async
     }
   }
 
-  // Fungsi untuk lupa password
-  Future<void> forgotPassword({
+// Fungsi untuk mengirim kode verifikasi
+  Future<void> sendResetCode({
     required String email,
-    required String newPassword,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/forgot-password'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        'email': email,
-        'password': newPassword, // Kirim password baru
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        jsonDecode(response.body)['message'] ?? 'Gagal memperbarui password',
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/send-reset-code'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          'email': email,
+        }),
       );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          jsonDecode(response.body)['message'] ?? 'Gagal mengirim kode verifikasi',
+        );
+      }
+    } catch (e) {
+      print('Error sending reset code: $e');
+      throw Exception('Gagal mengirim kode verifikasi: $e');
     }
   }
+
+  // Fungsi untuk reset password dengan kode verifikasi
+  Future<void> resetPasswordWithCode({
+    required String code,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/reset-password'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          'code': code,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          jsonDecode(response.body)['message'] ?? 'Gagal reset password',
+        );
+      }
+    } catch (e) {
+      print('Error resetting password: $e');
+      throw Exception('Gagal reset password: $e');
+    }
+  }
+
 
   //  Create Rule penyakit
   static Future<http.Response> createRulePenyakit({
@@ -1057,6 +1126,61 @@ Future<List<Map<String, dynamic>>> fetchHistoriDenganDetail(String userId) async
   }
 }
 
+Future<Map<String, dynamic>> updateUser({
+  required int id,
+  String? name,
+  String? email,
+  String? alamat,
+  String? nomorTelepon,
+  String? password,
+}) async {
+  try {
+    final response = await http.put(
+      Uri.parse('$userUrl/$id'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        if (name != null) 'name': name,
+        if (email != null) 'email': email,
+        if (alamat != null) 'alamat': alamat,
+        if (nomorTelepon != null) 'nomorTelepon': nomorTelepon,
+        if (password != null) 'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      return responseData['user'];
+    } else {
+      throw Exception(
+        jsonDecode(response.body)['message'] ?? 'Gagal mengupdate user'
+      );
+    }
+  } catch (e) {
+    print('Error updating user: $e');
+    throw Exception('Gagal mengupdate user: $e');
+  }
+}
+
+Future<void> deleteUser(int id) async {
+  try {
+    final response = await http.delete(
+      Uri.parse('$userUrl/$id'),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 200) {
+      // Successful deletion
+      print('User deleted successfully');
+    } else {
+      // Handle error response
+      final errorMessage = jsonDecode(response.body)['message'] ?? 'Gagal menghapus user';
+      throw Exception(errorMessage);
+    }
+  } catch (e) {
+    print('Error deleting user: $e');
+    throw Exception('Gagal menghapus user: $e');
+  }
+}
 
 }
 

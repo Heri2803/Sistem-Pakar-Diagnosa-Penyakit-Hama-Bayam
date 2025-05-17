@@ -43,16 +43,6 @@ class RegisterPage extends StatelessWidget {
                     ),
                     SizedBox(height: 20),
                     TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Username',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      controller: emailController,
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
                       obscureText: true,
                       decoration: InputDecoration(
                         labelText: 'Password',

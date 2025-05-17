@@ -93,40 +93,72 @@ router.get('/:id', userController.getUserById);
 
 /**
  * @swagger
- * /api/users:
+ * /api/users/{id}:
  *   put:
- *     summary: Mengupdate data user berdasarkan email
+ *     summary: Mengupdate data user berdasarkan ID
  *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID pengguna
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - email
  *             properties:
- *               email:
- *                 type: string
- *                 description: Email pengguna (digunakan untuk mencari user)
  *               name:
  *                 type: string
+ *                 description: Nama pengguna
+ *               email:
+ *                 type: string
+ *                 description: Email pengguna
  *               alamat:
  *                 type: string
+ *                 description: Alamat pengguna
  *               nomorTelepon:
  *                 type: string
- *               newPassword:
+ *                 description: Nomor telepon pengguna
+ *               password:
  *                 type: string
  *                 description: Password baru (opsional)
  *     responses:
  *       200:
  *         description: User berhasil diperbarui
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     alamat:
+ *                       type: string
+ *                     nomorTelepon:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     passwordUpdated:
+ *                       type: boolean
  *       404:
  *         description: User tidak ditemukan
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.put('/', userController.updateUserEmail);
+router.put('/:id', userController.updateUserEmail);
 
 /**
  * @swagger
