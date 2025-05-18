@@ -170,15 +170,15 @@ class _AdminPageState extends State<AdminPage> {
                   );
                 },
               ),
-              // ListTile(
-              //   title: Text('Halaman Histori User'),
-              //   onTap: () {
-              //     Navigator.push(
-              //       context,
-              //       MaterialPageRoute(builder: (context) => AdminHistoriPage()),
-              //     );
-              //   },
-              // ),
+              ListTile(
+                title: Text('Halaman Histori User'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AdminHistoriPage()),
+                  );
+                },
+              ),
               ListTile(
                 title: Text('Data Pengguna'),
                 onTap: () {

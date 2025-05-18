@@ -150,72 +150,121 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
     }
   }
 
+  // Fungsi baru untuk mengelompokkan berdasarkan diagnosis dan waktu yang sama
   List<Map<String, dynamic>> _groupHistoriByDiagnosis(
-  List<Map<String, dynamic>> data,
-) {
-  final Map<String, Map<String, dynamic>> groupedData = {};
-  print("Data mentah dari API: $data");
+    List<Map<String, dynamic>> data,
+  ) {
+    final Map<String, Map<String, dynamic>> groupedData = {};
+    print("Data mentah dari API (setelah filter userId): $data");
 
-  for (var item in data) {
-    final String? penyakitNama = item['penyakit_nama'];
-    final String? hamaNama = item['hama_nama'];
+    for (var item in data) {
+      final String? penyakitNama = item['penyakit_nama'];
+      final String? hamaNama = item['hama_nama'];
+      final String? tanggalDiagnosa = item['tanggal_diagnosa'];
 
-    final int? idPenyakit = item['id_penyakit'];
-    final int? idHama = item['id_hama'];
+      final int? idPenyakit = item['id_penyakit'];
+      final int? idHama = item['id_hama'];
 
-    final hasPenyakit = penyakitNama != null && penyakitNama.toString().isNotEmpty;
-    final hasHama = hamaNama != null && hamaNama.toString().isNotEmpty;
+      final hasPenyakit =
+          penyakitNama != null && penyakitNama.toString().isNotEmpty;
+      final hasHama = hamaNama != null && hamaNama.toString().isNotEmpty;
 
-    if (!hasPenyakit && !hasHama) {
-      print("Item dilewati karena tidak memiliki penyakit atau hama: $item");
-      continue;
-    }
+      if (!hasPenyakit && !hasHama) {
+        print("Item dilewati karena tidak memiliki penyakit atau hama: $item");
+        continue;
+      }
 
-    // Gabungkan nama penyakit dan hama jika keduanya ada
-    String diagnosisKey = '';
-    if (hasPenyakit && hasHama) {
-      diagnosisKey = '$penyakitNama & $hamaNama';
-    } else if (hasPenyakit) {
-      diagnosisKey = penyakitNama!;
-    } else {
-      diagnosisKey = hamaNama!;
-    }
+      if (tanggalDiagnosa == null) {
+        print("Item dilewati karena tidak memiliki tanggal diagnosa: $item");
+        continue;
+      }
 
-    // Tentukan diagnosis_type hanya sebagai referensi
-    String diagnosisType =
-        hasPenyakit && hasHama
-            ? 'penyakit & hama'
-            : hasPenyakit
-                ? 'penyakit'
-                : 'hama';
+      // Gabungkan nama penyakit dan hama jika keduanya ada
+      String diagnosisKey = '';
+      if (hasPenyakit && hasHama) {
+        diagnosisKey = '$penyakitNama & $hamaNama';
+      } else if (hasPenyakit) {
+        diagnosisKey = penyakitNama!;
+      } else {
+        diagnosisKey = hamaNama!;
+      }
 
-    // Inisialisasi grup jika belum ada
-    if (!groupedData.containsKey(diagnosisKey)) {
-      groupedData[diagnosisKey] = {
-        'diagnosis': diagnosisKey,
-        'diagnosis_type': diagnosisType,
-        'gejala': <String>[],
-        'hasil': item['hasil'],
-        'tanggal_diagnosa': item['tanggal_diagnosa'],
-        'id_penyakit': idPenyakit,
-        'id_hama': idHama,
-      };
-    }
+      // Tentukan diagnosis_type
+      String diagnosisType =
+          hasPenyakit && hasHama
+              ? 'penyakit & hama'
+              : hasPenyakit
+              ? 'penyakit'
+              : 'hama';
 
-    // Tambahkan gejala jika belum ada
-    if (item['gejala_nama'] != null) {
-      final gejalaNama = item['gejala_nama'];
-      if (!groupedData[diagnosisKey]!['gejala'].contains(gejalaNama)) {
-        groupedData[diagnosisKey]!['gejala'].add(gejalaNama);
+      // Format tanggal waktu ke format Indonesia
+      String formattedDateTime = '';
+      String rawDateTime = '';
+      DateTime dateTime;
+
+      try {
+        // Parsing tanggal dari string yang datang dari API
+        dateTime = DateTime.parse(tanggalDiagnosa);
+
+        // Buat format tanggal dan waktu yang lebih ramah pengguna
+        String day = dateTime.day.toString().padLeft(2, '0');
+        String month = dateTime.month.toString().padLeft(2, '0');
+        String year = dateTime.year.toString();
+        String hour = dateTime.hour.toString().padLeft(2, '0');
+        String minute = dateTime.minute.toString().padLeft(2, '0');
+        String second = dateTime.second.toString().padLeft(2, '0');
+
+        formattedDateTime = '$day-$month-$year $hour:$minute:$second WIB';
+
+        // Format timestamp untuk pengelompokan (tanpa detik untuk mengelompokkan waktu yang "sama")
+        rawDateTime = '$year-$month-$day $hour:$minute';
+      } catch (e) {
+        print("Error parsing date: $e for date: $tanggalDiagnosa");
+        formattedDateTime = 'Tanggal tidak valid';
+        rawDateTime = 'invalid';
+        continue; // Skip item with invalid date
+      }
+
+      // Buat composite key untuk pengelompokan (gabungan diagnosa dan waktu)
+      final compositeKey = '$diagnosisKey##$rawDateTime';
+
+      // Inisialisasi grup jika belum ada
+      if (!groupedData.containsKey(compositeKey)) {
+        groupedData[compositeKey] = {
+          'diagnosis': diagnosisKey,
+          'diagnosis_type': diagnosisType,
+          'gejala': <String>[],
+          'hasil': item['hasil'],
+          'tanggal_diagnosa': formattedDateTime,
+          'tanggal_diagnosa_raw': tanggalDiagnosa,
+          'id_penyakit': idPenyakit,
+          'id_hama': idHama,
+          'timestamp': rawDateTime, // menyimpan waktu untuk sorting
+        };
+      }
+
+      // Tambahkan gejala jika belum ada
+      if (item['gejala_nama'] != null) {
+        final gejalaNama = item['gejala_nama'];
+        if (!groupedData[compositeKey]!['gejala'].contains(gejalaNama)) {
+          groupedData[compositeKey]!['gejala'].add(gejalaNama);
+        }
       }
     }
+
+    // Konversi ke list dan urutkan berdasarkan timestamp terbaru
+    final result = groupedData.values.toList();
+    result.sort((a, b) {
+      final String timestampA = a['timestamp'] ?? '';
+      final String timestampB = b['timestamp'] ?? '';
+      return timestampB.compareTo(timestampA); // descending (terbaru dulu)
+    });
+
+    print(
+      "Hasil pengelompokan berdasarkan diagnosa dan waktu: ${result.length} entries",
+    );
+    return result;
   }
-
-  final result = groupedData.values.toList();
-  print("Hasil pengelompokan: $result");
-  return result;
-}
-
 
   Future<void> _fetchHistoriData() async {
     try {
@@ -333,68 +382,146 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
                             ? "Tidak ada gejala tercatat"
                             : gejalaList.join(', ');
 
+                    // Mendapatkan jenis diagnosis (penyakit/hama/keduanya)
+                    final String diagnosisType =
+                        riwayat['diagnosis_type'] ?? 'Tidak diketahui';
+
+                    // Mendapatkan badge warna berdasarkan jenis diagnosis
+                    Color badgeColor;
+                    switch (diagnosisType) {
+                      case 'penyakit':
+                        badgeColor = Color(0xFF9DC08D); // Warna untuk penyakit
+                        break;
+                      case 'hama':
+                        badgeColor = Color(
+                          0xFF7A9A6D,
+                        ); // Warna lebih gelap untuk hama
+                        break;
+                      case 'penyakit & hama':
+                        badgeColor = Color(
+                          0xFF5C7452,
+                        ); // Warna paling gelap untuk kombinasi
+                        break;
+                      default:
+                        badgeColor = Colors.grey[300]!;
+                    }
+
                     return Card(
                       margin: EdgeInsets.only(bottom: 12.0),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 3,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Diagnosis: ${riwayat['diagnosis']}',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                      child: Column(
+                        children: [
+                          // Header dengan waktu diagnosa
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFE1EDD5),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
                               ),
                             ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Gejala: $gejalaText',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Hasil: ${(riwayat['hasil'] as num?)?.toStringAsFixed(2) ?? "-"}',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Tanggal: ${riwayat['tanggal_diagnosa'] ?? "-"}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            SizedBox(height: 12),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  print("Navigating to DetailRiwayatPage with data: $riwayat");
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => DetailRiwayatPage(
-                                            detailRiwayat:
-                                                riwayat, // Kirim data riwayat ke halaman detail
-                                          ),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF9DC08D),
-                                  foregroundColor: Colors.white,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Icon(
+                                  Icons.access_time,
+                                  size: 18,
+                                  color: Colors.grey[700],
                                 ),
-                                child: Text('Lihat Detail'),
-                              ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${riwayat['tanggal_diagnosa'] ?? "Tanggal tidak tersedia"}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ),
+                                // Badge jenis diagnosis
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    diagnosisType,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          // Content
+                          Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Diagnosis: ${riwayat['diagnosis']}',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Gejala: $gejalaText',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Hasil: ${(riwayat['hasil'] as num?)?.toStringAsFixed(2) ?? "-"}',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                                SizedBox(height: 12),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      print(
+                                        "Navigating to DetailRiwayatPage with data: $riwayat",
+                                      );
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => DetailRiwayatPage(
+                                                detailRiwayat:
+                                                    riwayat, // Kirim data riwayat ke halaman detail
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Color(0xFF9DC08D),
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: Text('Lihat Detail'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
