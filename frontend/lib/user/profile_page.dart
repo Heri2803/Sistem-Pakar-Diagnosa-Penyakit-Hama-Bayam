@@ -309,7 +309,7 @@ class _ProfilPageState extends State<ProfilPage> {
                 children: [
                   // Card box untuk data pengguna
                   Container(
-                    height: 400,
+                    height: 200,
                     width: 450,
                     child: Card(
                       shape: RoundedRectangleBorder(
@@ -432,8 +432,6 @@ class _ProfilPageState extends State<ProfilPage> {
         _buildProfileItem("Email: ${userData?['email'] ?? '-'}"),
         Divider(color: Colors.black),
         _buildProfileItem("Alamat: ${userData?['alamat'] ?? '-'}"),
-        Divider(color: Colors.black),
-        _buildProfileItem("Nomor Telepon: ${userData?['nomorTelepon'] ?? '-'}"),
       ],
     );
   }

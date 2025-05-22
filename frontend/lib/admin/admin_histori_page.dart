@@ -65,8 +65,6 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
   }
 
   // Fungsi untuk mengelompokkan data berdasarkan userId, diagnosa, dan waktu
-
-  // Fungsi untuk mengelompokkan data berdasarkan userId, diagnosa, dan waktu
   List<Map<String, dynamic>> _groupHistoriData(
     List<Map<String, dynamic>> data,
   ) {
@@ -164,9 +162,6 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
       appBar: AppBar(
         title: Text('Riwayat Diagnosa'),
         backgroundColor: Color(0xFF9DC08D),
-        actions: [
-          IconButton(icon: Icon(Icons.refresh), onPressed: _loadHistoriData),
-        ],
       ),
       body:
           isLoading
@@ -251,7 +246,7 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
                                         histori['diagnosa'] ??
                                             'Tidak ada diagnosa',
                                         style: TextStyle(
-                                          color: _getDiagnosaColor(histori),
+                                        
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),

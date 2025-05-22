@@ -90,6 +90,50 @@ Future<List<Map<String, dynamic>>> fetchHistoriDenganDetail(String userId) async
   try {
     // Panggil API untuk mendapatkan data histori
     final historiResponse = await getHistoriDiagnosa(userId);
+    
+    // Tambahkan: Panggil API untuk mendapatkan data user
+    final userData = await getUserById(userId);
+    final String userName = userData != null ? userData['name'] ?? "User $userId" : "User $userId";
+
+    Future<List<Map<String, dynamic>>> fetchHistoriDenganDetail(String userId) async {
+  try {
+    // Panggil API untuk mendapatkan data histori
+    final historiResponse = await getHistoriDiagnosa(userId);
+    
+    // Perbaiki cara mendapatkan data user
+    final userData = await getUserById(userId);
+    // Pastikan data user ada dan nama diambil dengan benar
+    final String userName = userData != null && userData['name'] != null 
+        ? userData['name'] 
+        : "User $userId";
+    
+    print("User Data received: $userData"); // Debug log
+    
+    // Proses data histori
+    List<Map<String, dynamic>> result = historiResponse.map((histori) {
+      final gejala = histori['gejala'] ?? {};
+      final penyakit = histori['penyakit'] ?? {};
+      final hama = histori['hama'] ?? {};
+      
+      return {
+        "id": histori['id'],
+        "userId": histori['userId'],
+        "name": userName, // Menggunakan nama yang sudah diambil
+        "tanggal_diagnosa": histori['tanggal_diagnosa'],
+        "hasil": histori['hasil'],
+        "gejala_nama": gejala['nama'] ?? "Tidak diketahui",
+        "penyakit_nama": penyakit['nama'],
+        "hama_nama": hama['nama'],
+      };
+    }).toList();
+
+    print("Processed Histori Data with Username: $result"); // Debug log
+    return result;
+  } catch (e) {
+    print("Error fetching histori dengan detail: $e");
+    return [];
+  }
+}
 
     // Proses data histori
     List<Map<String, dynamic>> result = historiResponse.map((histori) {
@@ -98,19 +142,19 @@ Future<List<Map<String, dynamic>>> fetchHistoriDenganDetail(String userId) async
       final penyakit = histori['penyakit'] ?? {};
       final hama = histori['hama'] ?? {};
       
-
       return {
         "id": histori['id'],
         "userId": histori['userId'],
+        "name": userName, // Tambahkan nama user ke hasil
         "tanggal_diagnosa": histori['tanggal_diagnosa'],
         "hasil": histori['hasil'],
         "gejala_nama": gejala['nama'] ?? "Tidak diketahui",
-        "penyakit_nama": penyakit['nama'] ,
-        "hama_nama": hama['nama'] ,
+        "penyakit_nama": penyakit['nama'],
+        "hama_nama": hama['nama'],
       };
     }).toList();
 
-    print("Processed Histori Data: $result");
+    print("Processed Histori Data with Username: $result");
     return result;
   } catch (e) {
     print("Error fetching histori dengan detail: $e");
@@ -1179,6 +1223,28 @@ Future<void> deleteUser(int id) async {
   } catch (e) {
     print('Error deleting user: $e');
     throw Exception('Gagal menghapus user: $e');
+  }
+}
+
+// Tambahkan fungsi untuk mendapatkan data user berdasarkan ID
+Future<Map<String, dynamic>?> getUserById(String userId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$userUrl/$userId'), // Use userUrl instead of baseUrl
+      headers: {
+        "Content-Type": "application/json",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body); // Direct return as backend sends user object
+    } else {
+      print("Error fetching user data: ${response.statusCode}");
+      return null;
+    }
+  } catch (e) {
+    print("Exception in getUserById: $e");
+    return null;
   }
 }
 
