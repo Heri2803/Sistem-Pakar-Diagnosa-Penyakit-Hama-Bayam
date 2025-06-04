@@ -105,10 +105,14 @@ const swaggerOptions = {
       description: 'API documentation for SIBAYAM',
     },
     servers: [
-      {
-        url: 'https://backend-sistem-pakar-diagnosa-penya.vercel.app',
-        description: 'Deployed on Vercel',
-      },
+        {
+      url: 'https://backend-sistem-pakar-diagnosa-penya.vercel.app',
+      description: 'Production Server'
+    },
+    {
+      url: 'http://localhost:5000',
+      description: 'Development Server'
+    }
     ],
     components: {
       securitySchemes: {
