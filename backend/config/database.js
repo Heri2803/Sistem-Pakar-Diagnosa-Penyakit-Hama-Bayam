@@ -20,6 +20,7 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT, // tambahkan port
     dialect: 'mysql',
+    dialectModule: require('mysql2'),
     timezone: '+07:00',
     dialectOptions: {
       ssl: {
