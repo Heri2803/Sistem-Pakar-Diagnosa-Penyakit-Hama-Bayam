@@ -149,7 +149,7 @@ app.use('/api/diagnosa', diagnosaRoute);
 app.use('/api/histori', historiRoutes);
 
 // Swagger UI
-app.use('api-sibayam', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use('/api-sibayam', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Export for Vercel
 module.exports = app;
