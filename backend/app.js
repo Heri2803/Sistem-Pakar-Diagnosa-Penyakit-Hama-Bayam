@@ -18,6 +18,11 @@ dotenv.config();
 
 const app = express();
 
+app.get("/", (req, res) => {
+  res.send("Backend API is running 👍");
+});
+
+
 // Middlewares
 app.use(express.json());
 app.use(cors());
