@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/api_services/api_services.dart'; // Sesuaikan dengan path import Anda
+import 'package:SIBAYAM/api_services/api_services.dart'; // Sesuaikan dengan path import Anda
 
 class ImageUtilities {
   static Widget buildHamaImage(int id, {double? width, double? height}) {

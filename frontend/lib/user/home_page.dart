@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/user/profile_pakar_page.dart';
+import 'package:SIBAYAM/user/profile_pakar_page.dart';
 import 'diagnosa_page.dart';
 import 'riwayat_diagnosa_page.dart';
 import 'profile_page.dart';

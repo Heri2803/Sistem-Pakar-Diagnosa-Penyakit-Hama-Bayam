@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/admin/edit_penyakit_page.dart';
-import 'package:frontend/api_services/api_services.dart';
+import 'package:SIBAYAM/admin/edit_penyakit_page.dart';
+import 'package:SIBAYAM/api_services/api_services.dart';
 import 'tambah_penyakit_page.dart';
 import 'edit_penyakit_page.dart';
 

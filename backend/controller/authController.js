@@ -18,7 +18,7 @@ const generateToken = (user) => {
 // Menambahkan user baru dengan hashing Argon2
 exports.register = async (req, res) => {
     try {
-      const { name, email, password, alamat, nomorTelepon, role } = req.body;
+      const { name, email, password, alamat,  role } = req.body;
   
       // Cek apakah email sudah terdaftar
       const existingUser = await User.findOne({ where: { email } });
@@ -32,7 +32,6 @@ exports.register = async (req, res) => {
         email,
         password: hashedPassword,
         alamat,
-        nomorTelepon,
         role: 'user'
       });
   

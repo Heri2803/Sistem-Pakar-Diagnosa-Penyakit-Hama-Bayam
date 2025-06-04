@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_page.dart';
-import 'package:frontend/admin/admin_page.dart';
+import 'package:SIBAYAM/admin/admin_page.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 

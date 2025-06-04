@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/user/home_page.dart';
+import 'package:SIBAYAM/user/home_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:frontend/api_services/api_services.dart';
+import 'package:SIBAYAM/api_services/api_services.dart';
 import 'dart:typed_data';
 
 class HasilDiagnosaPage extends StatefulWidget {

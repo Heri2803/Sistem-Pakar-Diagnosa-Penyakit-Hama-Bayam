@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/admin/edit_rule_page.dart';
+import 'package:SIBAYAM/admin/edit_rule_page.dart';
 import 'package:http/http.dart' as http;
-import 'package:frontend/api_services/api_services.dart';
+import 'package:SIBAYAM/api_services/api_services.dart';
 import 'tambah_rule_page.dart';
 import 'edit_hama_page.dart';
 

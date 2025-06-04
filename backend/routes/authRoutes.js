@@ -25,7 +25,7 @@ const authController = require('../controller/authController');
  *               - name
  *               - email
  *               - password
- *               - nomorTelepon
+ *               
  *             properties:
  *               name:
  *                 type: string
@@ -36,9 +36,6 @@ const authController = require('../controller/authController');
  *               password:
  *                 type: string
  *                 example: mypassword
- *               nomorTelepon:
- *                 type: string
- *                 example: "08123456789"
  *               alamat:
  *                 type: string
  *                 example: "london inggris"

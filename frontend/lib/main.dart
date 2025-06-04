@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:frontend/user/home_page.dart';
-import 'package:frontend/admin/admin_page.dart';
-import 'package:frontend/user/before_login.dart';
+import 'package:SIBAYAM/user/home_page.dart';
+import 'package:SIBAYAM/admin/admin_page.dart';
+import 'package:SIBAYAM/user/before_login.dart';
 
 void main() {
   runApp(MyApp());

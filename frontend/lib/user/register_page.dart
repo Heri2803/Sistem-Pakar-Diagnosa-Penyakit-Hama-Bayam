@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/api_services/api_services.dart';
+import 'package:SIBAYAM/api_services/api_services.dart';
 
 // Halaman Pendaftaran
 class RegisterPage extends StatefulWidget {
@@ -81,8 +81,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (nameController.text.isEmpty ||
         emailController.text.isEmpty ||
         passwordController.text.isEmpty ||
-        alamatController.text.isEmpty ||
-        nomorHpController.text.isEmpty) {
+        alamatController.text.isEmpty) {
       _showErrorDialog('Semua field harus diisi');
       return;
     }

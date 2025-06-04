@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'detail_penyakit_page.dart';
-import 'package:frontend/api_services/api_services.dart';
+import 'package:SIBAYAM/api_services/api_services.dart';
 
 class PenyakitPage extends StatefulWidget {
   @override

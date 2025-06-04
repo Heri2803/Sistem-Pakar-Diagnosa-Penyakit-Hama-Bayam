@@ -6,8 +6,8 @@ import 'gejala_page.dart';
 import 'rule_page.dart';
 import 'user_list_page.dart';
 import 'admin_histori_page.dart';
-import 'package:frontend/api_services/api_services.dart';
-import 'package:frontend/user/login_page.dart';
+import 'package:SIBAYAM/api_services/api_services.dart';
+import 'package:SIBAYAM/user/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminPage extends StatefulWidget {
