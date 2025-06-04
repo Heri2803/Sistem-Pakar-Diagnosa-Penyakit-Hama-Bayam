@@ -18,9 +18,7 @@ dotenv.config();
 
 const app = express();
 
-// app.get("/", (req, res) => {
-//   res.send("Backend API is running 👍");
-// });
+
 
 
 // Middlewares
@@ -42,6 +40,10 @@ app.use("/api/rules_penyakit", ruleRoutes);
 app.use("/api/rules_hama", ruleHamaRoutes);
 app.use("/api/diagnosa", diagnosaRoute);
 app.use("/api/histori", historiRoutes);
+
+app.get("/", (req, res) => {
+  res.send("Backend API is running 👍");
+});
 
 
 // Swagger Documentation
