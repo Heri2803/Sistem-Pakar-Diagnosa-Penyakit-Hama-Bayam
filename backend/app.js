@@ -130,23 +130,23 @@ app.use(cors());
 app.use(express.json());
 
 // Static image folders
-app.use('/image_hama', express.static(path.join(__dirname, 'image_hama')));
-app.use('/image_penyakit', express.static(path.join(__dirname, 'image_penyakit')));
+// app.use('/image_hama', express.static(path.join(__dirname, 'image_hama')));
+// app.use('/image_penyakit', express.static(path.join(__dirname, 'image_penyakit')));
 
 // Routes
 app.get('/', (req, res) => {
   res.send('Backend API is running 👍');
 });
 
-app.use('/api/users', userRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/gejala', gejalaRoutes);
-app.use('/api/hama', hamaRoutes);
-app.use('/api/penyakit', penyakitRoutes);
-app.use('/api/rules_penyakit', ruleRoutes);
-app.use('/api/rules_hama', ruleHamaRoutes);
-app.use('/api/diagnosa', diagnosaRoute);
-app.use('/api/histori', historiRoutes);
+// app.use('/api/users', userRoutes);
+// app.use('/api/auth', authRoutes);
+// app.use('/api/gejala', gejalaRoutes);
+// app.use('/api/hama', hamaRoutes);
+// app.use('/api/penyakit', penyakitRoutes);
+// app.use('/api/rules_penyakit', ruleRoutes);
+// app.use('/api/rules_hama', ruleHamaRoutes);
+// app.use('/api/diagnosa', diagnosaRoute);
+// app.use('/api/histori', historiRoutes);
 
 // Swagger UI
 app.use('/api-sibayam', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
