@@ -1000,6 +1000,29 @@ Future<List<Map<String, dynamic>>> getAllHistori() async {
     }
   }
 
+  Future<bool> verifyResetCode({required String email, required String code}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/reset-password'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          'email': email,
+          'resetToken': code,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Jika status code 200, berarti kode valid
+        return true;
+      } else {
+        // Jika status code bukan 200, kode tidak valid
+        final error = jsonDecode(response.body);
+        throw error['message'] ?? 'Kode verifikasi tidak valid';
+      }
+    } catch (e) {
+      throw e.toString();
+    }
+  }
 
   //  Create Rule penyakit
   static Future<http.Response> createRulePenyakit({

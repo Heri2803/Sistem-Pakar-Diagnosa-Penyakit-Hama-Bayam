@@ -43,10 +43,14 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
     final List<dynamic> penyakitList = data['penyakit'] ?? [];
     final List<dynamic> hamaList = data['hama'] ?? [];
     final Map<String, dynamic>? hasilTertinggi = data['hasil_tertinggi'];
-    
+
     // Ambiguity information from backend
     final bool isAmbiguous = data['is_ambiguous'] ?? false;
-    final Map<String, dynamic>? ambiguityResolution = data['ambiguity_resolution'];
+    final Map<String, dynamic>? ambiguityResolution =
+        data['ambiguity_resolution'];
+
+    // Filter information from backend
+    final Map<String, dynamic>? filterInfo = data['filter_info'];
 
     // Get the first penyakit and hama (if any)
     Map<String, dynamic>? firstPenyakit =
@@ -88,81 +92,197 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
       ),
       body: Container(
         color: Color(0xFFEDF1D6),
-        child: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Ambiguity notification (if applicable)
-                    if (isAmbiguous && ambiguityResolution != null)
-                      _buildAmbiguityNotification(ambiguityResolution),
+        child:
+            isLoading
+                ? Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Filter notification (if applicable)
+                      if (filterInfo != null)
+                        _buildFilterNotification(filterInfo),
 
-                    // Main result display - use hasil_tertinggi from backend
-                    _buildDetailedResultFromBackend(context, hasilTertinggi),
+                      // Ambiguity notification (if applicable)
+                      if (isAmbiguous && ambiguityResolution != null)
+                        _buildAmbiguityNotification(ambiguityResolution),
 
-                    SizedBox(height: 24),
+                      // Main result display - use hasil_tertinggi from backend
+                      _buildDetailedResultFromBackend(context, hasilTertinggi),
 
-                    // Selected symptoms section
-                    _buildSection(
-                      context,
-                      'Gejala yang Dipilih',
-                      widget.gejalaTerpilih.isEmpty
-                          ? _buildEmptyResult('Tidak ada gejala yang dipilih')
-                          : Card(
+                      SizedBox(height: 24),
+
+                      // Selected symptoms section
+                      _buildSection(
+                        context,
+                        'Gejala yang Dipilih',
+                        widget.gejalaTerpilih.isEmpty
+                            ? _buildEmptyResult('Tidak ada gejala yang dipilih')
+                            : Card(
                               elevation: 2,
                               child: Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: widget.gejalaTerpilih
-                                      .map(
-                                        (gejala) => Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 4,
-                                          ),
-                                          child: Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Icon(
-                                                Icons.check_circle,
-                                                color: Colors.green,
-                                                size: 18,
+                                  children:
+                                      widget.gejalaTerpilih
+                                          .map(
+                                            (gejala) => Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                vertical: 4,
                                               ),
-                                              SizedBox(width: 8),
-                                              Expanded(child: Text(gejala)),
-                                            ],
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Icon(
+                                                    Icons.check_circle,
+                                                    color: Colors.green,
+                                                    size: 18,
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Expanded(child: Text(gejala)),
+                                                ],
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
                                 ),
                               ),
                             ),
+                      ),
+
+                      SizedBox(height: 24),
+
+                      // Other possible diseases section
+                      _buildSection(
+                        context,
+                        'Kemungkinan Penyakit Lainnya',
+                        _buildOtherPossibilities(
+                          penyakitList,
+                          hasilTertinggi,
+                          'penyakit',
+                        ),
+                      ),
+
+                      SizedBox(height: 24),
+
+                      // Other possible pests section
+                      _buildSection(
+                        context,
+                        'Kemungkinan Hama Lainnya',
+                        _buildOtherPossibilities(
+                          hamaList,
+                          hasilTertinggi,
+                          'hama',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+      ),
+    );
+  }
+
+  Widget _buildFilterNotification(Map<String, dynamic> filterInfo) {
+    final int totalSebelum = filterInfo['total_sebelum_filter'] ?? 0;
+    final int totalSetelah = filterInfo['total_setelah_filter'] ?? 0;
+    final int hasilTerfilter = filterInfo['hasil_terfilter'] ?? 0;
+    final bool fallbackToSymptomCount =
+        filterInfo['fallback_to_symptom_count'] ?? false;
+    final String? fallbackReason = filterInfo['fallback_reason'];
+
+    // Only show notification if there's filtering activity
+    if (hasilTerfilter == 0 && !fallbackToSymptomCount) {
+      return SizedBox.shrink();
+    }
+
+    Color cardColor;
+    Color iconColor;
+    IconData iconData;
+    String title;
+    String description;
+
+    if (fallbackToSymptomCount) {
+      // Fallback scenario
+      cardColor = Colors.orange.shade50;
+      iconColor = Colors.orange.shade700;
+      iconData = Icons.warning_amber_outlined;
+      title = 'Penyesuaian Hasil Diagnosa';
+      description =
+          'Sistem menggunakan kecocokan gejala terbanyak karena hasil dengan akurasi 100% hanya cocok dengan 1 gejala.';
+    } else {
+      // Normal filtering
+      cardColor = Colors.green.shade50;
+      iconColor = Colors.green.shade700;
+      iconData = Icons.filter_alt_outlined;
+      title = 'Filter Hasil Diagnosa';
+      description =
+          'Sistem memfilter $hasilTerfilter hasil dengan akurasi 100% yang hanya cocok dengan 1 gejala untuk memberikan diagnosis yang lebih akurat.';
+    }
+
+    return Card(
+      color: cardColor,
+      elevation: 2,
+      margin: EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(iconData, color: iconColor, size: 24),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: iconColor,
                     ),
-
-                    SizedBox(height: 24),
-
-                    // Other possible diseases section
-                    _buildSection(
-                      context,
-                      'Kemungkinan Penyakit Lainnya',
-                      _buildOtherPossibilities(penyakitList, hasilTertinggi, 'penyakit'),
-                    ),
-
-                    SizedBox(height: 24),
-
-                    // Other possible pests section
-                    _buildSection(
-                      context,
-                      'Kemungkinan Hama Lainnya',
-                      _buildOtherPossibilities(hamaList, hasilTertinggi, 'hama'),
-                    ),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            Text(description, style: TextStyle(fontSize: 14)),
+            if (fallbackReason != null) ...[
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Alasan: $fallbackReason',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.orange.shade800,
+                  ),
                 ),
               ),
+            ] else if (!fallbackToSymptomCount) ...[
+              SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    'Total hasil: $totalSebelum → $totalSetelah',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -183,11 +303,7 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Colors.blue.shade700,
-                  size: 24,
-                ),
+                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 24),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -249,11 +365,13 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
     // Determine type based on the presence of id fields
     String type = '';
     bool isPenyakit = false;
-    
-    if (hasilTertinggi.containsKey('id_penyakit') && hasilTertinggi['id_penyakit'] != null) {
+
+    if (hasilTertinggi.containsKey('id_penyakit') &&
+        hasilTertinggi['id_penyakit'] != null) {
       type = 'penyakit';
       isPenyakit = true;
-    } else if (hasilTertinggi.containsKey('id_hama') && hasilTertinggi['id_hama'] != null) {
+    } else if (hasilTertinggi.containsKey('id_hama') &&
+        hasilTertinggi['id_hama'] != null) {
       type = 'hama';
       isPenyakit = false;
     } else {
@@ -266,22 +384,28 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
     final completeData = _getCompleteItemData(hasilTertinggi, type);
 
     // Extract the data we need with safe access
-    final nama = completeData['nama'] ?? hasilTertinggi['nama'] ?? 'Tidak diketahui';
+    final nama =
+        completeData['nama'] ?? hasilTertinggi['nama'] ?? 'Tidak diketahui';
     final deskripsi = completeData['deskripsi'] ?? 'Tidak tersedia';
     final penanganan = completeData['penanganan'] ?? 'Tidak tersedia';
     final foto = completeData['foto'];
     final probabilitas = _getProbabilitas(hasilTertinggi);
-    
+
     // Get additional ambiguity info if available
     final jumlahGejalacocok = hasilTertinggi['jumlah_gejala_cocok'];
     final totalGejalaEntity = hasilTertinggi['total_gejala_entity'];
     final persentaseKesesuaian = hasilTertinggi['persentase_kesesuaian'];
 
+    // Check if this is a perfect match result that would normally be filtered
+    final isPerfectSingleMatch =
+        (probabilitas * 100).round() == 100 && jumlahGejalacocok == 1;
+
     // Debug log
     print('DEBUG - Building detailed result for: $nama');
     print('DEBUG - Type: $type, isPenyakit: $isPenyakit');
     print('DEBUG - Probabilitas: $probabilitas');
-    
+    print('DEBUG - Is perfect single match: $isPerfectSingleMatch');
+
     return Card(
       elevation: 6,
       shape: RoundedRectangleBorder(
@@ -300,7 +424,8 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
               children: [
                 Icon(
                   isPenyakit ? Icons.coronavirus_outlined : Icons.bug_report,
-                  color: isPenyakit ? Colors.red.shade700 : Colors.orange.shade700,
+                  color:
+                      isPenyakit ? Colors.red.shade700 : Colors.orange.shade700,
                   size: 28,
                 ),
                 SizedBox(width: 8),
@@ -310,14 +435,49 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: isPenyakit ? Colors.red.shade700 : Colors.orange.shade700,
+                      color:
+                          isPenyakit
+                              ? Colors.red.shade700
+                              : Colors.orange.shade700,
                     ),
                   ),
                 ),
                 _buildProbabilityIndicator(probabilitas),
               ],
             ),
-            
+
+            // Show warning if this is a perfect single match result
+            if (isPerfectSingleMatch)
+              Container(
+                margin: EdgeInsets.only(top: 8),
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.yellow.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.yellow.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.orange.shade700,
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Hasil ini dipilih berdasarkan kecocokan gejala terbanyak',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             // Additional info if ambiguity resolution occurred
             if (jumlahGejalacocok != null && totalGejalaEntity != null)
               Container(
@@ -329,7 +489,11 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.analytics_outlined, size: 16, color: Colors.grey.shade600),
+                    Icon(
+                      Icons.analytics_outlined,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'Kesesuaian: $jumlahGejalacocok/$totalGejalaEntity gejala',
@@ -350,7 +514,7 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
                   ],
                 ),
               ),
-            
+
             Divider(thickness: 1, height: 24),
 
             // Image section
@@ -431,52 +595,75 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
     );
   }
 
-  Widget _buildOtherPossibilities(
+ Widget _buildOtherPossibilities(
     List<dynamic> itemList,
     Map<String, dynamic>? hasilTertinggi,
     String type,
-  ) {
-    if (itemList.isEmpty) {
-      return _buildEmptyResult('Tidak ada kemungkinan ${type} lainnya');
+) {
+  // Check if there's a 100% match in hasilTertinggi
+  if (hasilTertinggi != null) {
+    double probabilitas = _getProbabilitas(hasilTertinggi);
+    if ((probabilitas * 100).round() == 100) {
+      return _buildEmptyResult(
+        'Ditemukan kecocokan 100% pada diagnosa utama',
+      );
     }
-
-    // Filter out the top result that's already shown
-    List<dynamic> otherItems = [];
-    
-    if (hasilTertinggi != null) {
-      // Get the ID of the top result
-      String? topResultId;
-      if (type == 'penyakit' && hasilTertinggi.containsKey('id_penyakit')) {
-        topResultId = hasilTertinggi['id_penyakit']?.toString();
-      } else if (type == 'hama' && hasilTertinggi.containsKey('id_hama')) {
-        topResultId = hasilTertinggi['id_hama']?.toString();
-      }
-
-      // Filter out the top result
-      otherItems = itemList.where((item) {
-        String? itemId;
-        if (type == 'penyakit') {
-          itemId = item['id_penyakit']?.toString();
-        } else {
-          itemId = item['id_hama']?.toString();
-        }
-        return topResultId == null || itemId != topResultId;
-      }).toList();
-    } else {
-      // If no top result, skip the first item
-      otherItems = itemList.skip(1).toList();
-    }
-
-    if (otherItems.isEmpty) {
-      return _buildEmptyResult('Tidak ada kemungkinan ${type} lainnya');
-    }
-
-    return Column(
-      children: otherItems
-          .map((item) => _buildItemCard(item, type))
-          .toList(),
-    );
   }
+
+  if (itemList.isEmpty) {
+    return _buildEmptyResult('Tidak ada kemungkinan ${type} lainnya');
+  }
+
+  // Filter out items with 100% probability and the top result
+  List otherItems = [];
+
+  if (hasilTertinggi != null) {
+    // Get the ID of the top result
+    String? topResultId;
+    if (type == 'penyakit' && hasilTertinggi.containsKey('id_penyakit')) {
+      topResultId = hasilTertinggi['id_penyakit']?.toString();
+    } else if (type == 'hama' && hasilTertinggi.containsKey('id_hama')) {
+      topResultId = hasilTertinggi['id_hama']?.toString();
+    }
+
+    // Filter out the top result AND items with 100% probability
+    otherItems = itemList.where((item) {
+      String? itemId;
+      if (type == 'penyakit') {
+        itemId = item['id_penyakit']?.toString();
+      } else {
+        itemId = item['id_hama']?.toString();
+      }
+      
+      // Skip if this is the top result
+      if (topResultId != null && itemId == topResultId) {
+        return false;
+      }
+      
+      // Skip if this item has 100% probability
+      double itemProbabilitas = _getProbabilitas(item);
+      if ((itemProbabilitas * 100).round() == 100) {
+        return false;
+      }
+      
+      return true;
+    }).toList();
+  } else {
+    // If no hasilTertinggi, filter out 100% probability items from all except first
+    otherItems = itemList.skip(1).where((item) {
+      double itemProbabilitas = _getProbabilitas(item);
+      return (itemProbabilitas * 100).round() != 100;
+    }).toList();
+  }
+
+  if (otherItems.isEmpty) {
+    return _buildEmptyResult('Tidak ada kemungkinan ${type} lainnya');
+  }
+
+  return Column(
+    children: otherItems.map((item) => _buildItemCard(item, type)).toList(),
+  );
+}
 
   Future<void> _fetchAdditionalData() async {
     setState(() {
@@ -518,7 +705,8 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
         if (detail.isNotEmpty) {
           double probability = 0.0;
           if (penyakit.containsKey('probabilitas_persen')) {
-            probability = (penyakit['probabilitas_persen'] as num).toDouble() / 100;
+            probability =
+                (penyakit['probabilitas_persen'] as num).toDouble() / 100;
           } else if (penyakit.containsKey('nilai_bayes')) {
             probability = (penyakit['nilai_bayes'] as num).toDouble();
           }
@@ -529,7 +717,8 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
             'id_penyakit': penyakitIdStr,
           };
 
-          final nama = penyakitDetails[penyakitIdStr]?['nama'] ?? 'Nama tidak ditemukan';
+          final nama =
+              penyakitDetails[penyakitIdStr]?['nama'] ?? 'Nama tidak ditemukan';
           print('DEBUG - Found details for penyakit ID $penyakitIdStr: $nama');
         }
       }
@@ -561,7 +750,8 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
             'id_hama': hamaIdStr,
           };
 
-          final nama = hamaDetails[hamaIdStr]?['nama'] ?? 'Nama tidak ditemukan';
+          final nama =
+              hamaDetails[hamaIdStr]?['nama'] ?? 'Nama tidak ditemukan';
           print('DEBUG - Found details for hama ID $hamaIdStr: $nama');
         }
       }
@@ -597,7 +787,9 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
       details = penyakitDetails[idStr];
 
       if (details == null || details.isEmpty) {
-        print('DEBUG - No cached details for penyakit ID: $idStr, searching API data...');
+        print(
+          'DEBUG - No cached details for penyakit ID: $idStr, searching API data...',
+        );
         details = semuaPenyakit.firstWhere(
           (p) => p['id'].toString() == idStr,
           orElse: () => <String, dynamic>{},
@@ -611,7 +803,9 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
       details = hamaDetails[idStr];
 
       if (details == null || details.isEmpty) {
-        print('DEBUG - No cached details for hama ID: $idStr, searching API data...');
+        print(
+          'DEBUG - No cached details for hama ID: $idStr, searching API data...',
+        );
         details = semuaHama.firstWhere(
           (h) => h['id'].toString() == idStr,
           orElse: () => <String, dynamic>{},
@@ -644,7 +838,9 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
         type == 'penyakit' ? 'id_penyakit' : 'id_hama': idStr,
       };
 
-      print('DEBUG - Final data for $type ID $idStr (${result['nama']}): probabilitas=${result['probabilitas']}');
+      print(
+        'DEBUG - Final data for $type ID $idStr (${result['nama']}): probabilitas=${result['probabilitas']}',
+      );
     } else {
       print('DEBUG - No details found for $type ID $idStr');
     }
@@ -656,31 +852,62 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
     final completeData = _getCompleteItemData(item, type);
     final nama = completeData['nama'] ?? 'Tidak diketahui';
     final probabilitas = _getProbabilitas(completeData);
-    
+
     // Get additional info for display
     final jumlahGejalacocok = item['jumlah_gejala_cocok'];
     final totalGejalaEntity = item['total_gejala_entity'];
+    final persentaseKesesuaian = item['persentase_kesesuaian'];
 
     return Card(
       margin: EdgeInsets.only(bottom: 8),
+      elevation: 2,
       child: ListTile(
         leading: Icon(
           type == 'penyakit' ? Icons.coronavirus_outlined : Icons.bug_report,
-          color: type == 'penyakit' ? Colors.red.shade700 : Colors.orange.shade700,
+          color: type == 'penyakit' ? Color(0xFF9DC08D) : Color(0xFF7A9A6D),
+          size: 24,
         ),
-        title: Text(nama),
-        subtitle: jumlahGejalacocok != null && totalGejalaEntity != null
-            ? Text(
-                'Kesesuaian: $jumlahGejalacocok/$totalGejalaEntity gejala',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              )
-            : null,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+        title: Text(
+          nama,
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF40513B),
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildProbabilityIndicator(probabilitas),
-            SizedBox(width: 8),
+            if (jumlahGejalacocok != null && totalGejalaEntity != null) ...[
+              SizedBox(height: 4),
+              Text(
+                'Kesesuaian: $jumlahGejalacocok/$totalGejalaEntity gejala',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              if (persentaseKesesuaian != null)
+                Text(
+                  '(${persentaseKesesuaian.toStringAsFixed(1)}%)',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+            ],
           ],
+        ),
+        trailing: Container(
+          width: 60,
+          height: 30,
+          decoration: BoxDecoration(
+            color: type == 'penyakit' ? Color(0xFF9DC08D) : Color(0xFF7A9A6D),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Center(
+            child: Text(
+              '${(probabilitas * 100).toStringAsFixed(0)}%',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -732,9 +959,10 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
   }
 
   Widget _buildProbabilityIndicator(double value) {
-    final Color indicatorColor = value > 0.7
-        ? Colors.red
-        : value > 0.4
+    final Color indicatorColor =
+        value > 0.7
+            ? Colors.red
+            : value > 0.4
             ? Colors.orange
             : Colors.green;
 

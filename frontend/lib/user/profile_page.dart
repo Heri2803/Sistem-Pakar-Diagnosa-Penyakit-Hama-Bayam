@@ -142,7 +142,13 @@ class _ProfilPageState extends State<ProfilPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text('Update Profil'),
+            title: Row(
+              children: [
+                Icon(Icons.edit, color: Color(0xFF9DC08D)),
+                SizedBox(width: 8),
+                Text('Update Profil'),
+              ],
+            ),
             content: SingleChildScrollView(
               child: Form(
                 key: _formKey,
@@ -151,16 +157,40 @@ class _ProfilPageState extends State<ProfilPage> {
                   children: [
                     TextFormField(
                       controller: _nameController,
-                      decoration: InputDecoration(labelText: 'Nama'),
+                      decoration: InputDecoration(
+                        labelText: 'Nama',
+                        prefixIcon: Icon(
+                          Icons.person,
+                          color: Color(0xFF9DC08D),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Color(0xFF9DC08D)),
+                        ),
+                      ),
                       validator:
                           (value) =>
                               value?.isEmpty ?? true
                                   ? 'Nama tidak boleh kosong'
                                   : null,
                     ),
+                    SizedBox(height: 16),
                     TextFormField(
                       controller: _emailController,
-                      decoration: InputDecoration(labelText: 'Email'),
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email, color: Color(0xFF9DC08D)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Color(0xFF9DC08D)),
+                        ),
+                      ),
                       validator: (value) {
                         if (value?.isEmpty ?? true)
                           return 'Email tidak boleh kosong';
@@ -168,12 +198,21 @@ class _ProfilPageState extends State<ProfilPage> {
                         return null;
                       },
                     ),
+                    SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
                       decoration: InputDecoration(
                         labelText: 'Password Baru',
                         helperText:
                             'Kosongkan jika tidak ingin mengubah password',
+                        prefixIcon: Icon(Icons.lock, color: Color(0xFF9DC08D)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Color(0xFF9DC08D)),
+                        ),
                       ),
                       obscureText: true,
                       validator: (value) {
@@ -184,18 +223,43 @@ class _ProfilPageState extends State<ProfilPage> {
                         return null;
                       },
                     ),
+                    SizedBox(height: 16),
                     TextFormField(
                       controller: _alamatController,
-                      decoration: InputDecoration(labelText: 'Alamat'),
+                      decoration: InputDecoration(
+                        labelText: 'Alamat',
+                        prefixIcon: Icon(
+                          Icons.location_on,
+                          color: Color(0xFF9DC08D),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Color(0xFF9DC08D)),
+                        ),
+                      ),
                       validator:
                           (value) =>
                               value?.isEmpty ?? true
                                   ? 'Alamat tidak boleh kosong'
                                   : null,
                     ),
+                    SizedBox(height: 16),
                     TextFormField(
                       controller: _nomorTeleponController,
-                      decoration: InputDecoration(labelText: 'Nomor Telepon'),
+                      decoration: InputDecoration(
+                        labelText: 'Nomor Telepon',
+                        prefixIcon: Icon(Icons.phone, color: Color(0xFF9DC08D)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Color(0xFF9DC08D)),
+                        ),
+                      ),
                       keyboardType: TextInputType.phone,
                       validator:
                           (value) =>
@@ -208,11 +272,12 @@ class _ProfilPageState extends State<ProfilPage> {
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+                icon: Icon(Icons.cancel, color: Colors.grey),
+                label: Text('Batal', style: TextStyle(color: Colors.grey)),
               ),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     try {
@@ -234,15 +299,29 @@ class _ProfilPageState extends State<ProfilPage> {
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Profil berhasil diperbarui'),
+                          content: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text('Profil berhasil diperbarui'),
+                            ],
+                          ),
                           backgroundColor: Colors.green,
                         ),
                       );
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            'Gagal memperbarui profil: ${e.toString()}',
+                          content: Row(
+                            children: [
+                              Icon(Icons.error, color: Colors.white),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Gagal memperbarui profil: ${e.toString()}',
+                                ),
+                              ),
+                            ],
                           ),
                           backgroundColor: Colors.red,
                         ),
@@ -250,10 +329,11 @@ class _ProfilPageState extends State<ProfilPage> {
                     }
                   }
                 },
+                icon: Icon(Icons.save, color: Colors.white),
+                label: Text('Update', style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF9DC08D),
                 ),
-                child: Text('Update'),
               ),
             ],
           ),
@@ -266,21 +346,38 @@ class _ProfilPageState extends State<ProfilPage> {
       backgroundColor: Color(0xFF9DC08D),
       body: Stack(
         children: [
-          // Judul halaman tetap di luar border (di bagian atas dan center)
+          // Background decoration
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF9DC08D), Color(0xFF8BB37A)],
+              ),
+            ),
+          ),
+
+          // Judul halaman dengan icon
           Align(
             alignment: Alignment.topCenter,
             child: Padding(
               padding: const EdgeInsets.only(top: 40.0),
               child: Column(
                 children: [
-                  Text(
-                    "Profil Pengguna",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.account_circle, color: Colors.white, size: 32),
+                      SizedBox(width: 12),
+                      Text(
+                        "Profil Pengguna",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 80),
                 ],
@@ -292,32 +389,38 @@ class _ProfilPageState extends State<ProfilPage> {
           Positioned(
             top: 40.0,
             left: 16.0,
-            child: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white, size: 28),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
             ),
           ),
 
           // Isi halaman
           Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 36.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Card box untuk data pengguna
                   Container(
-                    height: 200,
                     width: 450,
                     child: Card(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      elevation: 4,
+                      elevation: 8,
+                      shadowColor: Colors.black.withOpacity(0.2),
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(20.0),
                         child:
                             isLoading
                                 ? _buildLoadingState()
@@ -329,51 +432,72 @@ class _ProfilPageState extends State<ProfilPage> {
                   ),
                   SizedBox(height: 30),
 
-                  // Button untuk update data profil
-                  ElevatedButton(
-                    onPressed: _showUpdateProfileDialog,
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  // Buttons row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Button untuk update data profil
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _showUpdateProfileDialog,
+                          icon: Icon(
+                            Icons.edit,
+                            color: Color(0xFF9DC08D),
+                            size: 20,
+                          ),
+                          label: Text(
+                            "Update Profil",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF9DC08D),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            backgroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
                       ),
-                      backgroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 12,
+                      SizedBox(width: 12),
+                      // Button untuk logout
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _logout(context),
+                          icon: Icon(
+                            Icons.logout,
+                            color: Colors.red[700],
+                            size: 20,
+                          ),
+                          label: Text(
+                            "Logout",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.red[700],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            backgroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      "Update Data Profil",
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Color(0xFF9DC08D),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 30),
-
-                  // Button untuk logout
-                  ElevatedButton(
-                    onPressed: () => _logout(context),
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      backgroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: Text(
-                      "Logout",
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Color(0xFF9DC08D),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -392,7 +516,14 @@ class _ProfilPageState extends State<ProfilPage> {
         children: [
           CircularProgressIndicator(color: Color(0xFF9DC08D)),
           SizedBox(height: 16),
-          Text("Memuat data profil..."),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.hourglass_empty, color: Color(0xFF9DC08D)),
+              SizedBox(width: 8),
+              Text("Memuat data profil..."),
+            ],
+          ),
         ],
       ),
     );
@@ -412,7 +543,17 @@ class _ProfilPageState extends State<ProfilPage> {
             style: TextStyle(color: Colors.red),
           ),
           SizedBox(height: 16),
-          TextButton(onPressed: _loadUserData, child: Text("Coba Lagi")),
+          ElevatedButton.icon(
+            onPressed: _loadUserData,
+            icon: Icon(Icons.refresh, color: Colors.white),
+            label: Text("Coba Lagi", style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF9DC08D),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -427,20 +568,91 @@ class _ProfilPageState extends State<ProfilPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildProfileItem("Nama: ${userData?['name'] ?? '-'}"),
-        Divider(color: Colors.black),
-        _buildProfileItem("Email: ${userData?['email'] ?? '-'}"),
-        Divider(color: Colors.black),
-        _buildProfileItem("Alamat: ${userData?['alamat'] ?? '-'}"),
+        // Header card
+        Row(
+          children: [
+            Icon(Icons.info_outline, color: Color(0xFF9DC08D), size: 24),
+            SizedBox(width: 8),
+            Text(
+              "Informasi Profil",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF9DC08D),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 16),
+
+        _buildProfileItem(Icons.person, "Nama", userData?['name'] ?? '-'),
+        SizedBox(height: 12),
+
+        _buildProfileItem(Icons.email, "Email", userData?['email'] ?? '-'),
+        SizedBox(height: 12),
+
+        _buildProfileItem(
+          Icons.location_on,
+          "Alamat",
+          userData?['alamat'] ?? '-',
+        ),
+        SizedBox(height: 12),
+
+        _buildProfileItem(
+          Icons.admin_panel_settings,
+          "Role",
+          userData?['role'] ?? '-',
+        ),
       ],
     );
   }
 
-  // Fungsi untuk membuat item dalam Card box
-  Widget _buildProfileItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Text(text, style: TextStyle(fontSize: 18)),
+  // Fungsi untuk membuat item dalam Card box dengan icon
+  Widget _buildProfileItem(IconData icon, String label, String value) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Color(0xFF9DC08D).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, color: Color(0xFF9DC08D), size: 20),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -13,14 +13,26 @@ class DetailHamaPage extends StatefulWidget {
   _DetailHamaPageState createState() => _DetailHamaPageState();
 }
 
-class _DetailHamaPageState extends State<DetailHamaPage> {
+class _DetailHamaPageState extends State<DetailHamaPage> with TickerProviderStateMixin {
   late Future<Map<String, dynamic>> _detailHamaFuture;
   late Map<String, dynamic> _currentDetailHama;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     _currentDetailHama = widget.detailHama;
+    
+    // Initialize animation
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.forward();
 
     // Jika hamaId tersedia, fetch data terbaru dari API
     if (widget.hamaId != null) {
@@ -29,6 +41,12 @@ class _DetailHamaPageState extends State<DetailHamaPage> {
       // Jika tidak ada ID, gunakan data yang sudah diberikan
       _detailHamaFuture = Future.value(widget.detailHama);
     }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<Map<String, dynamic>> _fetchDetailHama(int id) async {
@@ -67,10 +85,37 @@ class _DetailHamaPageState extends State<DetailHamaPage> {
       future: ApiService().getHamaImageBytesByFilename(filename),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return SizedBox(
-            height: 200,
+          return Container(
+            height: 280,
             width: double.infinity,
-            child: Center(child: CircularProgressIndicator()),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [Colors.grey[300]!, Colors.grey[100]!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF609966)),
+                    strokeWidth: 3,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    "Memuat gambar...",
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         } else if (snapshot.hasError || snapshot.data == null) {
           return _buildPlaceholderImage(
@@ -78,13 +123,29 @@ class _DetailHamaPageState extends State<DetailHamaPage> {
             Icons.broken_image,
           );
         } else {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.memory(
-              snapshot.data!,
-              height: 200,
+          return Hero(
+            tag: 'hama_image_${widget.hamaId}',
+            child: Container(
+              height: 280,
               width: double.infinity,
-              fit: BoxFit.contain, // untuk memastikan proporsional & penuh
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: Offset(0, 8),
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.memory(
+                  snapshot.data!,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
           );
         }
@@ -95,25 +156,120 @@ class _DetailHamaPageState extends State<DetailHamaPage> {
   // Widget untuk placeholder gambar
   Widget _buildPlaceholderImage(String message, IconData icon) {
     return Container(
-      height: 200,
+      height: 280,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [Colors.grey[300]!, Colors.grey[100]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: Colors.grey[600]),
-          SizedBox(height: 8),
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 48, color: Colors.grey[600]),
+          ),
+          SizedBox(height: 16),
           Text(
             message,
             style: TextStyle(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard({
+    required String title,
+    required String content,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.2),
+            blurRadius: 15,
+            offset: Offset(0, 8),
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 24,
+                  ),
+                ),
+                SizedBox(width: 16),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Text(
+                content,
+                style: TextStyle(
+                  fontSize: 16,
+                  height: 1.6,
+                  color: Colors.grey[700],
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -121,125 +277,112 @@ class _DetailHamaPageState extends State<DetailHamaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF9DC08D),
+      backgroundColor: Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Color(0xFF9DC08D),
-        title: Text("Detail Hama", style: TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+        elevation: 0,
+        leading: Container(
+          margin: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
         ),
+        title: Text(
+          "Detail Hama",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: true,
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _detailHamaFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            );
-          }
+      body: SingleChildScrollView(
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _detailHamaFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                height: MediaQuery.of(context).size.height * 0.6,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF609966)),
+                        strokeWidth: 4,
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        "Memuat data hama...",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
 
-          if (snapshot.hasError) {
-            print('Error: ${snapshot.error}');
-            // Tampilkan data yang sudah ada jika terjadi error
-            return _buildDetailContent(_currentDetailHama);
-          }
-          print("Snapshot data runtimeType: ${snapshot.data.runtimeType}");
-          print("Snapshot data content: ${snapshot.data}");
+            if (snapshot.hasError) {
+              print('Error: ${snapshot.error}');
+              return _buildDetailContent(_currentDetailHama);
+            }
 
-          // Jika berhasil fetch data baru, tampilkan data tersebut
-          final detailData = snapshot.data ?? _currentDetailHama;
-          return _buildDetailContent(detailData);
-        },
+            final detailData = snapshot.data ?? _currentDetailHama;
+            return _buildDetailContent(detailData);
+          },
+        ),
       ),
     );
   }
 
   Widget _buildDetailContent(Map<String, dynamic> detailData) {
-    return SingleChildScrollView(
+    return FadeTransition(
+      opacity: _fadeAnimation,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tampilkan foto dari database dengan penanganan error yang lebih baik
+            // Hero Image Section
             _buildImageWidget(detailData["foto"]),
-            SizedBox(height: 16),
+            SizedBox(height: 24),
 
-            // Card Nama Hama
-            SizedBox(
-              width: double.infinity,
-              child: Card(
-                elevation: 6,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Nama Hama:",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        detailData["nama"] ?? "Nama hama tidak tersedia",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            // Nama Hama Card
+            _buildInfoCard(
+              title: "Nama Hama",
+              content: detailData["nama"] ?? "Nama hama tidak tersedia",
+              icon: Icons.bug_report,
+              color: Color(0xFF9DC08D),
             ),
-            SizedBox(height: 16),
 
-            // Card Deskripsi + Penanganan
-            SizedBox(
-              width: double.infinity,
-              child: Card(
-                elevation: 6,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Deskripsi:",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        detailData["deskripsi"] ?? "Deskripsi tidak tersedia",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        "Penanganan:",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        detailData["penanganan"] ?? "Penanganan tidak tersedia",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            // Deskripsi Card
+            _buildInfoCard(
+              title: "Deskripsi",
+              content: detailData["deskripsi"] ?? "Deskripsi tidak tersedia",
+              icon: Icons.description,
+              color: Color(0xFF9DC08D),
             ),
+
+            // Penanganan Card
+            _buildInfoCard(
+              title: "Penanganan",
+              content: detailData["penanganan"] ?? "Penanganan tidak tersedia",
+              icon: Icons.medical_services,
+              color: Color(0xFF9DC08D),
+            ),
+
+            // Bottom spacing
+            SizedBox(height: 20),
           ],
         ),
       ),

@@ -77,7 +77,7 @@ function calculateBayesProbability(rules, entityType) {
 async function getTotalGejalaForEntity(entityId, entityType, inputGejala) {
   try {
     let totalGejala = 0;
-    
+
     if (entityType === 'penyakit') {
       const allRules = await Rule_penyakit.findAll({
         where: { id_penyakit: entityId }
@@ -89,7 +89,7 @@ async function getTotalGejalaForEntity(entityId, entityType, inputGejala) {
       });
       totalGejala = allRules.length;
     }
-    
+
     return totalGejala;
   } catch (error) {
     console.error('Error getting total gejala:', error);
@@ -103,12 +103,12 @@ async function resolveAmbiguity(candidates, inputGejala) {
   for (let candidate of candidates) {
     const entityType = candidate.type;
     const entityId = entityType === 'penyakit' ? candidate.id_penyakit : candidate.id_hama;
-    
+
     candidate.total_gejala_entity = await getTotalGejalaForEntity(entityId, entityType, inputGejala);
-    
+
     // Hitung persentase kesesuaian gejala
-    candidate.persentase_kesesuaian = candidate.total_gejala_entity > 0 
-      ? (candidate.jumlah_gejala_cocok / candidate.total_gejala_entity) * 100 
+    candidate.persentase_kesesuaian = candidate.total_gejala_entity > 0
+      ? (candidate.jumlah_gejala_cocok / candidate.total_gejala_entity) * 100
       : 0;
   }
 
@@ -121,17 +121,35 @@ async function resolveAmbiguity(candidates, inputGejala) {
     if (a.jumlah_gejala_cocok !== b.jumlah_gejala_cocok) {
       return b.jumlah_gejala_cocok - a.jumlah_gejala_cocok;
     }
-    
+
     // Prioritas 2: Persentase kesesuaian
     if (Math.abs(a.persentase_kesesuaian - b.persentase_kesesuaian) > 0.01) {
       return b.persentase_kesesuaian - a.persentase_kesesuaian;
     }
-    
+
     // Prioritas 3: Entity dengan total gejala lebih sedikit (lebih spesifik)
     return a.total_gejala_entity - b.total_gejala_entity;
   });
 
   return candidates[0]; // Kembalikan yang terbaik
+}
+
+// Helper function untuk memfilter hasil dengan 100% akurasi yang hanya cocok 1 gejala
+function filterSingleSymptomPerfectMatch(results) {
+  const filtered = results.filter(result => {
+    // Jika probabilitas 100% dan hanya cocok dengan 1 gejala, filter keluar
+    const isPerfectMatch = Math.abs(result.probabilitas_persen - 100) < 0.0001;
+    const isSingleSymptom = result.jumlah_gejala_cocok === 1;
+
+    if (isPerfectMatch && isSingleSymptom) {
+      console.log(`Memfilter ${result.nama} (${result.type}) - 100% akurasi dengan hanya 1 gejala cocok`);
+      return false; // Filter keluar
+    }
+
+    return true; // Tetap masukkan
+  });
+
+  return filtered;
 }
 
 exports.diagnosa = async (req, res) => {
@@ -195,16 +213,41 @@ exports.diagnosa = async (req, res) => {
       ...sortedHama.map(h => ({ type: 'hama', ...h }))
     ].sort((a, b) => b.probabilitas_persen - a.probabilitas_persen);
 
+    // ========== FILTER HASIL 100% DENGAN 1 GEJALA ==========
+    const filteredResults = filterSingleSymptomPerfectMatch(allResults);
+
+    // Jika semua hasil terfilter, gunakan hasil berdasarkan kecocokan gejala terbanyak
+    let finalResults = filteredResults;
+    let filterInfo = {
+      total_sebelum_filter: allResults.length,
+      total_setelah_filter: filteredResults.length,
+      hasil_terfilter: allResults.length - filteredResults.length
+    };
+
+    if (filteredResults.length === 0 && allResults.length > 0) {
+      console.log('Semua hasil terfilter karena 100% dengan 1 gejala. Menggunakan kecocokan gejala terbanyak.');
+      // Urutkan berdasarkan jumlah gejala cocok, lalu probabilitas
+      finalResults = allResults.sort((a, b) => {
+        if (a.jumlah_gejala_cocok !== b.jumlah_gejala_cocok) {
+          return b.jumlah_gejala_cocok - a.jumlah_gejala_cocok;
+        }
+        return b.probabilitas_persen - a.probabilitas_persen;
+      });
+
+      filterInfo.fallback_to_symptom_count = true;
+      filterInfo.fallback_reason = 'Semua hasil memiliki 100% akurasi dengan hanya 1 gejala cocok';
+    }
+
     // ========== PENANGANAN AMBIGUITAS ==========
     let hasilTertinggi = null;
     let isAmbiguous = false;
     let ambiguityResolution = null;
 
-    if (allResults.length > 0) {
-      const nilaiTertinggi = allResults[0].probabilitas_persen;
-      
+    if (finalResults.length > 0) {
+      const nilaiTertinggi = finalResults[0].probabilitas_persen;
+
       // Cari semua hasil dengan nilai probabilitas yang sama dengan yang tertinggi
-      const kandidatTertinggi = allResults.filter(result => 
+      const kandidatTertinggi = finalResults.filter(result =>
         Math.abs(result.probabilitas_persen - nilaiTertinggi) < 0.0001 // Toleransi untuk floating point
       );
 
@@ -212,10 +255,10 @@ exports.diagnosa = async (req, res) => {
         // Ada ambiguitas - perlu resolusi
         isAmbiguous = true;
         console.log(`Ditemukan ${kandidatTertinggi.length} kandidat dengan nilai probabilitas sama: ${nilaiTertinggi}%`);
-        
+
         // Lakukan resolusi ambiguitas
         hasilTertinggi = await resolveAmbiguity(kandidatTertinggi, gejala);
-        
+
         ambiguityResolution = {
           total_kandidat: kandidatTertinggi.length,
           metode_resolusi: 'jumlah_gejala_cocok',
@@ -235,7 +278,38 @@ exports.diagnosa = async (req, res) => {
         };
       } else {
         // Tidak ada ambiguitas
-        hasilTertinggi = allResults[0];
+        hasilTertinggi = finalResults[0];
+
+        // Validasi: Jika hanya cocok 1 gejala dan masih ada kandidat lain dengan kecocokan lebih baik
+        if (hasilTertinggi.jumlah_gejala_cocok === 1 && finalResults.length > 1) {
+          const alternatif = finalResults
+            .filter(result => result.jumlah_gejala_cocok > 1 && result.probabilitas_persen >= hasilTertinggi.probabilitas_persen - 5); // toleransi 5%
+
+          if (alternatif.length > 0) {
+            // Gunakan resolveAmbiguity terhadap alternatif + hasilTertinggi
+            const kandidatAmbigu = [hasilTertinggi, ...alternatif];
+            hasilTertinggi = await resolveAmbiguity(kandidatAmbigu, gejala);
+
+            isAmbiguous = true;
+            ambiguityResolution = {
+              total_kandidat: kandidatAmbigu.length,
+              metode_resolusi: 'gejala_minimum_filter',
+              kandidat: kandidatAmbigu.map(k => ({
+                type: k.type,
+                nama: k.nama,
+                probabilitas_persen: k.probabilitas_persen,
+                jumlah_gejala_cocok: k.jumlah_gejala_cocok,
+                total_gejala_entity: k.total_gejala_entity,
+                persentase_kesesuaian: k.persentase_kesesuaian
+              })),
+              terpilih: {
+                type: hasilTertinggi.type,
+                nama: hasilTertinggi.nama,
+                alasan: `Dipilih karena memiliki jumlah gejala cocok lebih banyak dari kandidat yang hanya cocok 1 gejala`
+              }
+            };
+          }
+        }
       }
     }
 
@@ -290,7 +364,8 @@ exports.diagnosa = async (req, res) => {
         gejala_input: gejala.map(id => parseInt(id)),
         hasil_tertinggi: hasilTertinggi,
         is_ambiguous: isAmbiguous,
-        ambiguity_resolution: ambiguityResolution
+        ambiguity_resolution: ambiguityResolution,
+        filter_info: filterInfo // Informasi tentang filtering yang dilakukan
       }
     });
 

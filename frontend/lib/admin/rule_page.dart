@@ -177,11 +177,16 @@ class _RulePageState extends State<RulePage> {
                       ),
                     ).then((_) => fetchRules());
                   },
-                  icon: Icon(Icons.bug_report),
-                  label: Text("Tambah Rule Hama"),
-                  style: ElevatedButton.styleFrom(
+                  icon: Icon(Icons.bug_report, size: 16,),
+                  label: Text(
+                    "Tambah Rule Hama",
+                    style: TextStyle(fontSize: 12)),
+                    style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Padding lebih kecil
+                    minimumSize: Size(0, 32), // Tinggi minimum lebih kecil
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Mengurangi area tap
                   ),
                 ),
                 SizedBox(width: 10),
@@ -204,11 +209,16 @@ class _RulePageState extends State<RulePage> {
                       ),
                     ).then((_) => fetchRules());
                   },
-                  icon: Icon(Icons.healing),
-                  label: Text("Tambah Rule Penyakit"),
-                  style: ElevatedButton.styleFrom(
+                  icon: Icon(Icons.healing, size: 16,),
+                  label: Text(
+                    "Tambah Rule Penyakit",
+                    style: TextStyle(fontSize: 12),),
+                    style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Padding lebih kecil
+                    minimumSize: Size(0, 32), // Tinggi minimum lebih kecil
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Mengurangi area tap
                   ),
                 ),
               ],

@@ -2,14 +2,112 @@ import 'package:flutter/material.dart';
 import 'package:frontend/api_services/api_services.dart';
 
 // Halaman Pendaftaran
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
+  @override
+  _RegisterPageState createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController alamatController = TextEditingController();
   final TextEditingController nomorHpController = TextEditingController();
+  bool _isLoading = false;
 
   final ApiService apiService = ApiService();
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red),
+            SizedBox(width: 10),
+            Text('Registrasi Gagal'),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'OK',
+              style: TextStyle(color: Color(0xFF9DC08D)),
+            ),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Color(0xFF9DC08D)),
+            SizedBox(width: 10),
+            Text('Berhasil'),
+          ],
+        ),
+        content: Text('Registrasi berhasil! Silahkan login dengan akun Anda.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(context).pop(); // Back to login page
+            },
+            child: Text(
+              'OK',
+              style: TextStyle(color: Color(0xFF9DC08D)),
+            ),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleRegister() async {
+    // Validasi input
+    if (nameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        passwordController.text.isEmpty ||
+        alamatController.text.isEmpty ||
+        nomorHpController.text.isEmpty) {
+      _showErrorDialog('Semua field harus diisi');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await apiService.registerUser(
+        name: nameController.text,
+        email: emailController.text,
+        password: passwordController.text,
+        alamat: alamatController.text,
+        nomorTelepon: nomorHpController.text,
+      );
+      _showSuccessDialog();
+    } catch (e) {
+      _showErrorDialog(e.toString());
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +133,13 @@ class RegisterPage extends StatelessWidget {
                     TextField(
                       decoration: InputDecoration(
                         labelText: 'Nama',
+                        labelStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.black.withOpacity(0.6), width: 2),
                         ),
                       ),
                       controller: nameController,
@@ -46,8 +149,13 @@ class RegisterPage extends StatelessWidget {
                       obscureText: true,
                       decoration: InputDecoration(
                         labelText: 'Password',
+                        labelStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.black.withOpacity(0.6), width: 2),
                         ),
                       ),
                       controller: passwordController,
@@ -56,8 +164,13 @@ class RegisterPage extends StatelessWidget {
                     TextField(
                       decoration: InputDecoration(
                         labelText: 'Email',
+                        labelStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.black.withOpacity(0.6), width: 2),
                         ),
                       ),
                       controller: emailController,
@@ -66,22 +179,32 @@ class RegisterPage extends StatelessWidget {
                     TextField(
                       decoration: InputDecoration(
                         labelText: 'Alamat',
+                        labelStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.black.withOpacity(0.6), width: 2),
                         ),
                       ),
                       controller: alamatController,
                     ),
                     SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Nomor HP',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      controller: nomorHpController,
-                    ),
+                    // TextField(
+                    //   decoration: InputDecoration(
+                    //     labelText: 'Nomor HP',
+                    //     labelStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
+                    //     border: OutlineInputBorder(
+                    //       borderRadius: BorderRadius.circular(10),
+                    //     ),
+                    //     focusedBorder: OutlineInputBorder(
+                    //       borderRadius: BorderRadius.circular(10),
+                    //       borderSide: BorderSide(color: Colors.black.withOpacity(0.6), width: 2),
+                    //     ),
+                    //   ),
+                    //   controller: nomorHpController,
+                    // ),
                     SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
@@ -93,33 +216,17 @@ class RegisterPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () async {
-                          try {
-                            await apiService.registerUser(
-                              name: nameController.text,
-                              email: emailController.text,
-                              password: passwordController.text,
-                              alamat: alamatController.text,
-                              nomorTelepon: nomorHpController.text,
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Registrasi berhasil!')),
-                            );
-                            Navigator.pop(context); // kembali ke login page
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Registrasi gagal: $e')),
-                            );
-                          }
-                        },
-                        child: Text(
-                          'Daftar',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        onPressed: _isLoading ? null : _handleRegister,
+                        child: _isLoading
+                            ? CircularProgressIndicator(color: Colors.white)
+                            : Text(
+                                'Daftar',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                   ],

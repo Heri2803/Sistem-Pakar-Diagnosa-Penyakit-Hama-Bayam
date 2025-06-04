@@ -112,10 +112,16 @@ const createGmailTransporter = () => {
       // Generate 6 digit random code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-  
+
+// Konversi ke waktu Indonesia (GMT+7)
+const expiresAtWIB = new Date(expiresAt.getTime() + 7 * 60 * 60 * 1000);
+
+// Format manual jadi ISO-like (tanpa Z karena bukan UTC)
+const isoWIB = expiresAtWIB.toISOString().replace( '+07:00');
+
       await user.update({
         resetToken: code,
-        resetTokenExpiry: expiresAt,
+        resetTokenExpiry: isoWIB,
       });
   
       // Nama aplikasi yang konsisten

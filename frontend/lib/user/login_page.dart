@@ -16,7 +16,34 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  
+  bool _isPasswordVisible = false;
+
+  // Method to show error dialog
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red),
+                SizedBox(width: 10),
+                Text('Error'),
+              ],
+            ),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('OK', style: TextStyle(color: Color(0xFF9DC08D))),
+              ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+    );
+  }
 
   Future<void> _login() async {
     setState(() {
@@ -27,12 +54,10 @@ class _LoginPageState extends State<LoginPage> {
     String password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Email dan Password harus diisi")),
-      );
       setState(() {
         _isLoading = false;
       });
+      _showErrorDialog('Email dan Password harus diisi');
       return;
     }
 
@@ -41,10 +66,7 @@ class _LoginPageState extends State<LoginPage> {
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "email": email,
-          "password": password,
-        }),
+        body: jsonEncode({"email": email, "password": password}),
       );
 
       var responseData = jsonDecode(response.body);
@@ -56,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
         await prefs.setString('token', responseData['token']);
         await prefs.setString('role', responseData['role']);
         await prefs.setString('email', email);
-        await prefs.setString('userId', responseData['userId'].toString()); 
+        await prefs.setString('userId', responseData['userId'].toString());
 
         // Redirect berdasarkan role
         if (responseData['role'] == 'admin') {
@@ -71,19 +93,19 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(responseData['message'] ?? "Login gagal")),
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorDialog(
+          responseData['message'] ?? 'Email atau Password salah',
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Terjadi kesalahan: $e")),
-      );
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorDialog('Terjadi kesalahan koneksi. Silakan coba lagi.');
     }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   @override
@@ -109,10 +131,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/images/bayam.png',
-                      height: 150,
-                    ),
+                    Image.asset('assets/images/bayam.png', height: 150),
                     SizedBox(height: 30),
                     Card(
                       shape: RoundedRectangleBorder(
@@ -128,19 +147,53 @@ class _LoginPageState extends State<LoginPage> {
                               controller: _emailController,
                               decoration: InputDecoration(
                                 labelText: 'email',
+                                labelStyle: TextStyle(
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                    color: Colors.black.withOpacity(0.6),
+                                    width: 2,
+                                  ),
                                 ),
                               ),
                             ),
                             SizedBox(height: 20),
                             TextField(
                               controller: _passwordController,
-                              obscureText: true,
+                              obscureText:
+                                  !_isPasswordVisible, // Toggle visibility based on state
                               decoration: InputDecoration(
                                 labelText: 'Password',
+                                labelStyle: TextStyle(
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                    color: Colors.black.withOpacity(0.6),
+                                    width: 2,
+                                  ),
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _isPasswordVisible
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: Color(0xFF9DC08D),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isPasswordVisible = !_isPasswordVisible;
+                                    });
+                                  },
                                 ),
                               ),
                             ),
@@ -156,18 +209,19 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 ),
                                 onPressed: _isLoading ? null : _login,
-                                child: _isLoading
-                                    ? CircularProgressIndicator(
-                                        color: Colors.white,
-                                      )
-                                    : Text(
-                                        'Login',
-                                        style: TextStyle(
+                                child:
+                                    _isLoading
+                                        ? CircularProgressIndicator(
                                           color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
+                                        )
+                                        : Text(
+                                          'Login',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
                               ),
                             ),
                           ],
@@ -175,11 +229,11 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     SizedBox(height: 20),
-                    Row(
+                    Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () {
+                        TextButton(
+                          onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -187,17 +241,39 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             );
                           },
-                          child: Text(
-                            'Belum punya akun? Daftar',
-                            style: TextStyle(
-                              color: Colors.white,
-                              decoration: TextDecoration.underline,
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.person_add_outlined,
+                                color: Color(0xFF9DC08D),
+                                size: 16,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Belum punya akun? Daftar',
+                                style: TextStyle(
+                                  color: Color(0xFF9DC08D),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: () {
+                        SizedBox(height: 10),
+                        TextButton(
+                          onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -205,12 +281,34 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             );
                           },
-                          child: Text(
-                            'Lupa Password?',
-                            style: TextStyle(
-                              color: Colors.white,
-                              decoration: TextDecoration.underline,
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
                             ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.lock_reset_outlined,
+                                color: Color(0xFF9DC08D),
+                                size: 16,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Lupa Password?',
+                                style: TextStyle(
+                                  color: Color(0xFF9DC08D),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
