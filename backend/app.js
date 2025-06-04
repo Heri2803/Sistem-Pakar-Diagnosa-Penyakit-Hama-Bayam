@@ -106,7 +106,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: '/',
+        url: 'https://backend-sistem-pakar-diagnosa-penya.vercel.app',
         description: 'Deployed on Vercel',
       },
     ],
