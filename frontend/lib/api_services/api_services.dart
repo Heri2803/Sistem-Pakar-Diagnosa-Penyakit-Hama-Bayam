@@ -7,15 +7,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000/api/auth';
-  static const String gejalaUrl = 'http://localhost:5000/api/gejala';
-  static const String hamaUrl = 'http://localhost:5000/api/hama';
-  static const String penyakitUrl = 'http://localhost:5000/api/penyakit';
-  static const String rulesPenyakitUrl ='http://localhost:5000/api/rules_penyakit';
-  static const String rulesHamaUrl = 'http://localhost:5000/api/rules_hama';
-  static const String userUrl = 'http://localhost:5000/api/users';
-  static const String diagnosaUrl = 'http://localhost:5000/api/diagnosa';
-  static const String historiUrl = 'http://localhost:5000/api/histori';
+  static const String baseUrl = 'https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/auth';
+  static const String gejalaUrl = 'https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/gejala';
+  static const String hamaUrl = 'https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/hama';
+  static const String penyakitUrl = 'https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/penyakit';
+  static const String rulesPenyakitUrl ='https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/rules_penyakit';
+  static const String rulesHamaUrl = 'https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/rules_hama';
+  static const String userUrl = 'https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/users';
+  static const String diagnosaUrl = 'https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/diagnosa';
+  static const String historiUrl = 'https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/histori';
   static const Duration timeout = Duration(seconds: 15);
 
 /// Fungsi untuk mengirim gejala dan menerima hasil diagnosa
@@ -419,7 +419,7 @@ Future<List<Map<String, dynamic>>> getAllHistori() async {
 
   Future<Uint8List?> getHamaImageBytesByFilename(String filename) async {
   try {
-    final url = Uri.parse('http://localhost:5000/image_hama/$filename');
+    final url = Uri.parse('https://backend-sistem-pakar-diagnosa-penya.vercel.app/image_hama/$filename');
     print('Fetching image from: $url');
     final response = await http.get(url);
 
@@ -721,7 +721,7 @@ Future<List<Map<String, dynamic>>> getAllHistori() async {
 
   Future<Uint8List?> getPenyakitImageBytesByFilename(String filename) async {
   try {
-    final url = Uri.parse('http://localhost:5000/image_penyakit/$filename');
+    final url = Uri.parse('https://backend-sistem-pakar-diagnosa-penya.vercel.app/image_penyakit/$filename');
     print('Fetching image from: $url');
     final response = await http.get(url);
 

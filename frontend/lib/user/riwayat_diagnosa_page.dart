@@ -94,7 +94,7 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
   Future<void> _fetchUserData() async {
     try {
       // Buat URL untuk endpoint user API
-      var url = Uri.parse("http://localhost:5000/api/users");
+      var url = Uri.parse("https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/users");
 
       // Kirim permintaan GET dengan token autentikasi
       var response = await http.get(

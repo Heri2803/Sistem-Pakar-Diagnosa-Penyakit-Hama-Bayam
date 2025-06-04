@@ -62,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     try {
-      var url = Uri.parse("http://localhost:5000/api/auth/login");
+      var url = Uri.parse("https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/auth/login");
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
