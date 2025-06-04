@@ -32,5 +32,5 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 // Swagger setup function
 module.exports = (app) => {
-    app.use('/api-sibayam', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+    app.use('/api-sibayam/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 };
