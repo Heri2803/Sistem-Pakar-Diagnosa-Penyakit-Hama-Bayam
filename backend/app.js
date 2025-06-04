@@ -81,15 +81,15 @@ const dotenv = require('dotenv');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsDoc = require('swagger-jsdoc');
 
-const userRoutes = require('../routes/userRoutes');
-const authRoutes = require('../routes/authRoutes');
-const gejalaRoutes = require('../routes/gejalaRoute');
-const hamaRoutes = require('../routes/hamaRoutes');
-const penyakitRoutes = require('../routes/penyakitRoutes');
-const ruleRoutes = require('../routes/ruleRoutes');
-const ruleHamaRoutes = require('../routes/ruleHamaRoutes');
-const diagnosaRoute = require('../routes/diagnosaRoutes');
-const historiRoutes = require('../routes/historiRoutes');
+const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
+const gejalaRoutes = require('./routes/gejalaRoute');
+const hamaRoutes = require('./routes/hamaRoutes');
+const penyakitRoutes = require('./routes/penyakitRoutes');
+const ruleRoutes = require('./routes/ruleRoutes');
+const ruleHamaRoutes = require('./routes/ruleHamaRoutes');
+const diagnosaRoute = require('./routes/diagnosaRoutes');
+const historiRoutes = require('./routes/historiRoutes');
 
 dotenv.config();
 
@@ -130,8 +130,8 @@ app.use(cors());
 app.use(express.json());
 
 // Static image folders
-app.use('/image_hama', express.static(path.join(__dirname, '../image_hama')));
-app.use('/image_penyakit', express.static(path.join(__dirname, '../image_penyakit')));
+app.use('/image_hama', express.static(path.join(__dirname, 'image_hama')));
+app.use('/image_penyakit', express.static(path.join(__dirname, 'image_penyakit')));
 
 // Routes
 app.get('/', (req, res) => {
