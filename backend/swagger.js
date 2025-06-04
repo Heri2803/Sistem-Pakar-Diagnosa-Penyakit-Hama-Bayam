@@ -11,8 +11,8 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: '/',
-                description: 'Local Development Server sibayam',
+                url: 'https://backend-sistem-pakar-diagnosa-penya.vercel.app',
+                description: 'Production Server'
             },
         ],
         components: {
