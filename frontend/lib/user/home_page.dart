@@ -5,19 +5,48 @@ import 'riwayat_diagnosa_page.dart';
 import 'profile_page.dart';
 import 'basis_pengetahuan_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'login_page.dart';
+import 'dart:async';
 
 class HomePage extends StatefulWidget {
+
+  const HomePage({Key? key}) : super(key: key);
+  
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   String userId = '';  // Variabel untuk menyimpan userId
+  Timer? _logoutTimer;
 
   @override
   void initState() {
-    super.initState();  
+    super.initState();
+    _startAutoLogoutTimer();  
+  }
+
+  void _startAutoLogoutTimer() {
+    _logoutTimer?.cancel(); // Pastikan timer sebelumnya di-cancel
+
+    _logoutTimer = Timer(const Duration(minutes: 5), () async {
+      // Hapus semua data login
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // Redirect ke LoginPage
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) =>  LoginPage()),
+        (route) => false, // Menghapus semua halaman sebelumnya
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _logoutTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> navigateToRiwayatDiagnosaPage(BuildContext context) async {
@@ -32,8 +61,8 @@ class _HomePageState extends State<HomePage> {
     return;
   }
   }
-
   
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

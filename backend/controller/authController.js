@@ -41,9 +41,9 @@ exports.register = async (req, res) => {
     }
   };
 
-  // Penyimpanan sesi login (in-memory)
-  const activeSessions = {}; 
-  const sessionTimeouts = {};
+ // Inisialisasi global variables di awal file
+const activeSessions = {}; // { userId: true }
+const sessionTimeouts = {}; // { userId: timeoutId }
 
 // Login
 exports.login = async (req, res) => {
@@ -58,7 +58,10 @@ exports.login = async (req, res) => {
 
         // 🔹 Cek apakah user sudah login di device lain
         if (activeSessions[user.id]) {
-            return res.status(403).json({ message: "Akun ini sedang digunakan di perangkat lain." });
+            return res.status(403).json({ 
+                message: "Akun ini sedang digunakan di perangkat lain.",
+                debug: `User ${user.id} masih dalam sesi aktif`
+            });
         }
 
         // 🔹 Verifikasi password
@@ -75,42 +78,144 @@ exports.login = async (req, res) => {
         );
 
         // 🔹 Tandai user sedang login (aktif)
-        activeSessions[user.id] = true;
+        activeSessions[user.id] = {
+            loginTime: new Date(),
+            email: user.email
+        };
 
-        // 🔹 Atur timer logout otomatis setelah 5 menit (300000 ms)
+        // 🔹 Bersihkan timeout lama jika ada
         if (sessionTimeouts[user.id]) {
-            clearTimeout(sessionTimeouts[user.id]); // Bersihkan timer lama jika ada
+            clearTimeout(sessionTimeouts[user.id]);
+            delete sessionTimeouts[user.id];
         }
+
+        // 🔹 Atur timer logout otomatis setelah 5 menit
         sessionTimeouts[user.id] = setTimeout(() => {
+            console.log(`User ID ${user.id} (${user.email}) otomatis logout karena timeout`);
             delete activeSessions[user.id];
             delete sessionTimeouts[user.id];
-            console.log(`User ID ${user.id} otomatis logout karena timeout`);
         }, 5 * 60 * 1000); // 5 menit
 
-        console.log("User ID dari backend:", user.id);
+        console.log("Login berhasil - User ID:", user.id, "Email:", user.email);
+        console.log("Active sessions:", Object.keys(activeSessions));
 
         // 🔹 Kirim response
         res.status(200).json({
             message: "Login berhasil",
             token,
-            role: user.role
+            role: user.role,
+            userId: user.id
         });
 
     } catch (error) {
-        res.status(500).json({ message: "Terjadi kesalahan", error });
+        console.error("Login error:", error);
+        res.status(500).json({ message: "Terjadi kesalahan", error: error.message });
     }
 };
 
-//logout
+// Logout (Versi yang lebih robust)
 exports.logout = async (req, res) => {
-    const userId = req.user?.id;
+    try {
+        // Coba ambil userId dari berbagai sumber
+        let userId = req.user?.id;
+        
+        // Jika tidak ada dari middleware, coba ambil dari body atau query
+        if (!userId) {
+            userId = req.body?.userId || req.query?.userId;
+        }
+        
+        // Jika masih tidak ada, coba decode token manual
+        if (!userId && req.headers.authorization) {
+            try {
+                const token = req.headers.authorization.split(' ')[1];
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                userId = decoded.id;
+            } catch (tokenError) {
+                console.log("Token decode error:", tokenError.message);
+            }
+        }
+
+        console.log("Logout attempt - User ID:", userId);
+        console.log("Active sessions before logout:", Object.keys(activeSessions));
+
+        if (userId && activeSessions[userId]) {
+            // Hapus sesi aktif
+            delete activeSessions[userId];
+            
+            // Bersihkan timeout
+            if (sessionTimeouts[userId]) {
+                clearTimeout(sessionTimeouts[userId]);
+                delete sessionTimeouts[userId];
+            }
+            
+            console.log("Logout berhasil - User ID:", userId);
+            console.log("Active sessions after logout:", Object.keys(activeSessions));
+            
+            return res.status(200).json({ 
+                message: "Logout berhasil",
+                userId: userId
+            });
+        }
+        
+        console.log("Logout gagal - Tidak ada sesi aktif untuk User ID:", userId);
+        res.status(400).json({ 
+            message: "Tidak ada sesi login aktif",
+            userId: userId,
+            activeSessions: Object.keys(activeSessions)
+        });
+        
+    } catch (error) {
+        console.error("Logout error:", error);
+        res.status(500).json({ message: "Terjadi kesalahan saat logout", error: error.message });
+    }
+};
+
+// Tambahkan endpoint untuk debugging (opsional - hapus di production)
+exports.debugSessions = (req, res) => {
+    res.json({
+        activeSessions: activeSessions,
+        sessionTimeouts: Object.keys(sessionTimeouts),
+        message: "Debug info - hapus endpoint ini di production"
+    });
+};
+
+// Force logout (untuk admin atau debugging)
+exports.forceLogout = (req, res) => {
+    const { userId } = req.body;
+    
     if (userId && activeSessions[userId]) {
         delete activeSessions[userId];
+        if (sessionTimeouts[userId]) {
+            clearTimeout(sessionTimeouts[userId]);
+            delete sessionTimeouts[userId];
+        }
+        return res.json({ message: `User ${userId} berhasil di-force logout` });
+    }
+    
+    res.status(404).json({ message: "User tidak ditemukan dalam sesi aktif" });
+};
+
+// Clear semua sessions (untuk debugging)
+exports.clearAllSessions = (req, res) => {
+    const sessionCount = Object.keys(activeSessions).length;
+    
+    // Bersihkan semua timeout
+    Object.keys(sessionTimeouts).forEach(userId => {
         clearTimeout(sessionTimeouts[userId]);
         delete sessionTimeouts[userId];
-        return res.status(200).json({ message: "Logout berhasil" });
-    }
-    res.status(400).json({ message: "Tidak ada sesi login aktif" });
+    });
+    
+    // Bersihkan semua active sessions
+    Object.keys(activeSessions).forEach(userId => {
+        delete activeSessions[userId];
+    });
+    
+    console.log(`Cleared ${sessionCount} active sessions`);
+    
+    res.json({
+        message: "Semua sesi aktif berhasil dibersihkan",
+        clearedSessions: sessionCount
+    });
 };
 
 

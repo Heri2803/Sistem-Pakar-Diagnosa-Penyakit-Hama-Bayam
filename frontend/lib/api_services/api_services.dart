@@ -223,6 +223,8 @@ Future<List<Map<String, dynamic>>> getAllHistori() async {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       print("User ID dari respons login: ${responseData['userId']}"); // Tambahkan log
       await prefs.setString('userId', responseData['userId'].toString());
+      await prefs.setString('token', responseData['token']);
+      await prefs.setString('role', responseData['role']);
 
       return responseData;
     } else {
@@ -239,6 +241,7 @@ Future<List<Map<String, dynamic>>> getAllHistori() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     await prefs.remove('role');
+    await prefs.remove('userId');
   }
 
   // Fungsi Cek Login
