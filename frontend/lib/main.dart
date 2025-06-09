@@ -41,7 +41,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Sistem Pakar Bayam',
+      title: 'SIBAYAM',
       home: _initialScreen,
     );
   }

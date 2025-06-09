@@ -63,7 +63,7 @@ class _ProfilPageState extends State<ProfilPage> {
       }
 
       // Buat URL untuk endpoint user API
-      var url = Uri.parse("https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/users");
+      var url = Uri.parse("https://beckend-sistem-pakar-diagnosa-penyakit.onrender.com/api/users");
 
       // Kirim permintaan GET dengan token autentikasi
       var response = await http.get(
@@ -135,7 +135,6 @@ class _ProfilPageState extends State<ProfilPage> {
     _nameController.text = userData?['name'] ?? '';
     _emailController.text = userData?['email'] ?? '';
     _alamatController.text = userData?['alamat'] ?? '';
-    _nomorTeleponController.text = userData?['nomorTelepon'] ?? '';
     _passwordController.text = ''; // Empty for security
 
     showDialog(
@@ -247,26 +246,26 @@ class _ProfilPageState extends State<ProfilPage> {
                                   : null,
                     ),
                     SizedBox(height: 16),
-                    TextFormField(
-                      controller: _nomorTeleponController,
-                      decoration: InputDecoration(
-                        labelText: 'Nomor Telepon',
-                        prefixIcon: Icon(Icons.phone, color: Color(0xFF9DC08D)),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Color(0xFF9DC08D)),
-                        ),
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator:
-                          (value) =>
-                              value?.isEmpty ?? true
-                                  ? 'Nomor telepon tidak boleh kosong'
-                                  : null,
-                    ),
+                    // TextFormField(
+                    //   controller: _nomorTeleponController,
+                    //   decoration: InputDecoration(
+                    //     labelText: 'Nomor Telepon',
+                    //     prefixIcon: Icon(Icons.phone, color: Color(0xFF9DC08D)),
+                    //     border: OutlineInputBorder(
+                    //       borderRadius: BorderRadius.circular(8),
+                    //     ),
+                    //     focusedBorder: OutlineInputBorder(
+                    //       borderRadius: BorderRadius.circular(8),
+                    //       borderSide: BorderSide(color: Color(0xFF9DC08D)),
+                    //     ),
+                    //   ),
+                    //   keyboardType: TextInputType.phone,
+                    //   validator:
+                    //       (value) =>
+                    //           value?.isEmpty ?? true
+                    //               ? 'Nomor telepon tidak boleh kosong'
+                    //               : null,
+                    // ),
                   ],
                 ),
               ),

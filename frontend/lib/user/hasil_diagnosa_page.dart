@@ -614,6 +614,12 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
     return _buildEmptyResult('Tidak ada kemungkinan ${type} lainnya');
   }
 
+  // Get the probability of the main diagnosis result
+  double? mainDiagnosisProbability;
+  if (hasilTertinggi != null) {
+    mainDiagnosisProbability = _getProbabilitas(hasilTertinggi);
+  }
+
   // Filter out items with 100% probability and the top result
   List otherItems = [];
 
@@ -626,7 +632,7 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
       topResultId = hasilTertinggi['id_hama']?.toString();
     }
 
-    // Filter out the top result AND items with 100% probability
+    // Filter out the top result AND items with 100% probability AND items with higher probability than main diagnosis
     otherItems = itemList.where((item) {
       String? itemId;
       if (type == 'penyakit') {
@@ -640,9 +646,16 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
         return false;
       }
       
-      // Skip if this item has 100% probability
+      // Get item probability
       double itemProbabilitas = _getProbabilitas(item);
+      
+      // Skip if this item has 100% probability
       if ((itemProbabilitas * 100).round() == 100) {
+        return false;
+      }
+      
+      // Skip if this item has higher probability than main diagnosis
+      if (mainDiagnosisProbability != null && itemProbabilitas > mainDiagnosisProbability) {
         return false;
       }
       
@@ -975,7 +988,7 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
       ),
       child: Center(
         child: Text(
-          '${(value * 100).toStringAsFixed(0)}%',
+          '${((value * 1000).floor()/10).toStringAsFixed(1)}%',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
@@ -1055,7 +1068,7 @@ Widget _buildProbabilityIndicator(double value) {
     ),
     child: Center(
       child: Text(
-        '${(value * 100).toStringAsFixed(0)}%',
+        '${((value * 1000).floor()/10).toStringAsFixed(1)}%',
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     ),

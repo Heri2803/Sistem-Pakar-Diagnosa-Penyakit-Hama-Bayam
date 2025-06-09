@@ -153,7 +153,7 @@ class DetailRiwayatPage extends StatelessWidget {
                     Text('Gejala: $gejalaList', style: TextStyle(fontSize: 16)),
                     SizedBox(height: 8),
                     Text(
-                      'Hasil: ${(detailRiwayat['hasil'] as num?)?.toStringAsFixed(2) ?? "-"}',
+                      'Hasil: ${detailRiwayat['hasil'] != null ? "${(((detailRiwayat['hasil'] as num) * 1000).floor() / 10).toStringAsFixed(1)}%" : "-"}',
                       style: TextStyle(fontSize: 16),
                     ),
                     SizedBox(height: 8),

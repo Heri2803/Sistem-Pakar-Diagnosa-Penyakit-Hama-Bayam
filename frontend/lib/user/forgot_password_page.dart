@@ -257,10 +257,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   return;
                 }
                 
-                if (passwordController.text.length < 6) {
+                if (passwordController.text.length < 8) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Password minimal 6 karakter.'),
+                      content: Text('Password minimal 8 karakter.'),
                       backgroundColor: Colors.red,
                     ),
                   );

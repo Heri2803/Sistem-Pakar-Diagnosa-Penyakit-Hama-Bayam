@@ -152,6 +152,36 @@ function filterSingleSymptomPerfectMatch(results) {
   return filtered;
 }
 
+// Helper function untuk memprioritaskan berdasarkan jumlah gejala cocok
+function prioritizeBySymptomCount(results) {
+  // Kelompokkan hasil berdasarkan jumlah gejala cocok
+  const groupedBySymptoms = {};
+  results.forEach(result => {
+    const symptomCount = result.jumlah_gejala_cocok;
+    if (!groupedBySymptoms[symptomCount]) {
+      groupedBySymptoms[symptomCount] = [];
+    }
+    groupedBySymptoms[symptomCount].push(result);
+  });
+
+  // Ambil kelompok dengan jumlah gejala cocok terbanyak
+  const maxSymptomCount = Math.max(...Object.keys(groupedBySymptoms).map(Number));
+  const topSymptomMatches = groupedBySymptoms[maxSymptomCount];
+
+  // Jika ada lebih dari 1 hasil dengan gejala cocok terbanyak, urutkan berdasarkan probabilitas
+  const sortedTopMatches = topSymptomMatches.sort((a, b) => {
+    return b.probabilitas_persen - a.probabilitas_persen;
+  });
+
+  console.log(`Memprioritaskan ${sortedTopMatches.length} hasil dengan ${maxSymptomCount} gejala cocok`);
+
+  return {
+    prioritizedResults: sortedTopMatches,
+    maxSymptomCount: maxSymptomCount,
+    totalGroups: Object.keys(groupedBySymptoms).length
+  };
+}
+
 exports.diagnosa = async (req, res) => {
   const { gejala } = req.body;
   const userId = req.user?.id;
@@ -236,6 +266,26 @@ exports.diagnosa = async (req, res) => {
 
       filterInfo.fallback_to_symptom_count = true;
       filterInfo.fallback_reason = 'Semua hasil memiliki 100% akurasi dengan hanya 1 gejala cocok';
+    } else if (filteredResults.length > 0) {
+      // ========== PRIORITAS BERDASARKAN JUMLAH GEJALA COCOK ==========
+      const priorityAnalysis = prioritizeBySymptomCount(filteredResults);
+
+      // Jika ada hasil dengan gejala cocok lebih banyak, prioritaskan mereka
+      if (priorityAnalysis.totalGroups > 1) {
+        console.log(`Menggunakan prioritas gejala: ${priorityAnalysis.maxSymptomCount} gejala cocok diprioritaskan`);
+        finalResults = priorityAnalysis.prioritizedResults;
+
+        filterInfo.symptom_priority_applied = true;
+        filterInfo.max_symptom_count = priorityAnalysis.maxSymptomCount;
+        filterInfo.prioritized_count = priorityAnalysis.prioritizedResults.length;
+      } else {
+        // Jika semua hasil memiliki jumlah gejala cocok yang sama, urutkan berdasarkan probabilitas
+        finalResults = filteredResults.sort((a, b) => {
+          return b.probabilitas_persen - a.probabilitas_persen;
+        });
+
+        filterInfo.sorted_by_probability = true;
+      }
     }
 
     // ========== PENANGANAN AMBIGUITAS ==========

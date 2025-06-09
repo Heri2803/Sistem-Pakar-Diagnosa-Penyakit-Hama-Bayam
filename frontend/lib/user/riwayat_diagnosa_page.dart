@@ -94,7 +94,9 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
   Future<void> _fetchUserData() async {
     try {
       // Buat URL untuk endpoint user API
-      var url = Uri.parse("https://backend-sistem-pakar-diagnosa-penya.vercel.app/api/users");
+      var url = Uri.parse(
+        "https://beckend-sistem-pakar-diagnosa-penyakit.onrender.com/api/users",
+      );
 
       // Kirim permintaan GET dengan token autentikasi
       var response = await http.get(
@@ -489,7 +491,7 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  'Hasil: ${(riwayat['hasil'] as num?)?.toStringAsFixed(2) ?? "-"}',
+                                  'Hasil: ${riwayat['hasil'] != null ? "${(((riwayat['hasil'] as num) * 1000).floor() / 10).toStringAsFixed(1)}%" : "-"}',
                                   style: TextStyle(fontSize: 14),
                                 ),
                                 SizedBox(height: 12),

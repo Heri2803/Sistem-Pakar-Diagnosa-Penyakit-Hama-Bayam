@@ -56,9 +56,14 @@ class _DiagnosaPageState extends State<DiagnosaPage> {
   }
 
   void prosesHasilDiagnosa() async {
-    if (gejalaTerpilihIds.isEmpty) {
+    // Validasi minimal 3 gejala
+    if (gejalaTerpilihIds.length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Silakan pilih minimal satu gejala')),
+        SnackBar(
+          content: Text('Silakan pilih minimal 3 gejala untuk melakukan diagnosa'),
+          backgroundColor: Color(0xFF9DC08D),
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -175,9 +180,29 @@ class _DiagnosaPageState extends State<DiagnosaPage> {
                                       ),
                               ),
                               Divider(color: Colors.grey),
-                              Text(
-                                "Gejala Terpilih",
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "Gejala Terpilih",
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: gejalaTerpilihIds.length >= 3 ? Colors.green : Colors.green,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      "${gejalaTerpilihIds.length}/min 3",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               SizedBox(height: 5),
                               SizedBox(
@@ -202,15 +227,21 @@ class _DiagnosaPageState extends State<DiagnosaPage> {
                                 height: 30,
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: gejalaTerpilihIds.length >= 3 ? Colors.green : Colors.grey,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(15),
                                     ),
                                   ),
-                                  onPressed: prosesHasilDiagnosa,
+                                  onPressed: gejalaTerpilihIds.length >= 3 ? prosesHasilDiagnosa : null,
                                   child: Text(
-                                    "Lihat Hasil Diagnosa",
-                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                    gejalaTerpilihIds.length >= 3 
+                                        ? "Lihat Hasil Diagnosa" 
+                                        : "Pilih minimal 3 gejala",
+                                    style: TextStyle(
+                                      color: Colors.white, 
+                                      fontSize: 16, 
+                                      fontWeight: FontWeight.bold
+                                    ),
                                   ),
                                 ),
                               ),
