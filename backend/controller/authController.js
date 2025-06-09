@@ -42,7 +42,8 @@ exports.register = async (req, res) => {
   };
 
   // Penyimpanan sesi login (in-memory)
-  const activeSessions = {}; // key: user.id, value: true/false
+  const activeSessions = {}; 
+  const sessionTimeouts = {};
 
 // Login
 exports.login = async (req, res) => {
@@ -76,9 +77,19 @@ exports.login = async (req, res) => {
         // 🔹 Tandai user sedang login (aktif)
         activeSessions[user.id] = true;
 
+        // 🔹 Atur timer logout otomatis setelah 5 menit (300000 ms)
+        if (sessionTimeouts[user.id]) {
+            clearTimeout(sessionTimeouts[user.id]); // Bersihkan timer lama jika ada
+        }
+        sessionTimeouts[user.id] = setTimeout(() => {
+            delete activeSessions[user.id];
+            delete sessionTimeouts[user.id];
+            console.log(`User ID ${user.id} otomatis logout karena timeout`);
+        }, 5 * 60 * 1000); // 5 menit
+
         console.log("User ID dari backend:", user.id);
 
-        // 🔹 Kirim response dengan token dan role
+        // 🔹 Kirim response
         res.status(200).json({
             message: "Login berhasil",
             token,
@@ -90,14 +101,18 @@ exports.login = async (req, res) => {
     }
 };
 
-exports.logout = (req, res) => {
-    const userId = req.user.id; // Ambil dari JWT yang sudah diverifikasi
-
-    // Hapus sesi aktif
-    delete activeSessions[userId];
-
-    res.status(200).json({ message: "Logout berhasil" });
+//logout
+exports.logout = async (req, res) => {
+    const userId = req.user?.id;
+    if (userId && activeSessions[userId]) {
+        delete activeSessions[userId];
+        clearTimeout(sessionTimeouts[userId]);
+        delete sessionTimeouts[userId];
+        return res.status(200).json({ message: "Logout berhasil" });
+    }
+    res.status(400).json({ message: "Tidak ada sesi login aktif" });
 };
+
 
 // Buat transporter Nodemailer dengan Gmail
 const createGmailTransporter = () => {
