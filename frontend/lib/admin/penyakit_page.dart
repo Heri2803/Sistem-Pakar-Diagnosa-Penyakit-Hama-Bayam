@@ -81,7 +81,7 @@ class _PenyakitPageState extends State<PenyakitPage> {
             : penyakitList.length;
     List currentPageData = penyakitList.sublist(start, end);
     return Scaffold(
-      appBar: AppBar(title: Text('Halaman Penyakit')),
+      appBar: AppBar(title: Text('Halaman Penyakit'), backgroundColor: Color(0xFF9DC08D)),
       body: Column(
         children: [
           SizedBox(height: 20),

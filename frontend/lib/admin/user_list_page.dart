@@ -416,7 +416,7 @@ class _UserListPageState extends State<UserListPage> {
                       DataColumn(label: Text('Nama')),
                       DataColumn(label: Text('Email')),
                       DataColumn(label: Text('Alamat')),
-                      DataColumn(label: Text('No. Telepon')),
+                      // DataColumn(label: Text('No. Telepon')),
                       DataColumn(label: Text('Role')),
                       DataColumn(label: Text('Aksi')),
                     ],
@@ -427,7 +427,7 @@ class _UserListPageState extends State<UserListPage> {
                               DataCell(Text(user['name'] ?? '-')),
                               DataCell(Text(user['email'] ?? '-')),
                               DataCell(Text(user['alamat'] ?? '-')),
-                              DataCell(Text(user['nomorTelepon'] ?? '-')),
+                              // DataCell(Text(user['nomorTelepon'] ?? '-')),
                               DataCell(
                                 Container(
                                   padding: EdgeInsets.symmetric(

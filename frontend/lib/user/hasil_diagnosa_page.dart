@@ -61,7 +61,7 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Hasil Diagnosa'),
-        backgroundColor: Color(0xFFEDF1D6),
+        backgroundColor: Color(0xFF9DC08D),
         foregroundColor: Color(0xFF40513B),
       ),
       bottomNavigationBar: Padding(

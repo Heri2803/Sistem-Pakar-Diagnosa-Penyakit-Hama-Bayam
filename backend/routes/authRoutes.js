@@ -76,6 +76,8 @@ router.post('/register', authController.register);
  *         description: Login berhasil
  *       401:
  *         description: Password salah
+ *       403:
+ *        description: Akun sedang digunakan di perangkat lain
  *       404:
  *         description: User tidak ditemukan
  *       500:

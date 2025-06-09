@@ -97,7 +97,7 @@ class ProfilPakarPage extends StatelessWidget {
                                       radius: 60,
                                       backgroundColor: Colors.grey[200],
                                       backgroundImage: AssetImage(
-                                        'assets/images/expert_photo.jpg',
+                                        'assets/images/pak_gallyndra.jpg',
                                       ),
                                     ),
                                   ),

@@ -40,7 +40,9 @@ exports.register = async (req, res) => {
       res.status(500).json({ message: 'Error creating user', error });
     }
   };
-  
+
+  // Penyimpanan sesi login (in-memory)
+  const activeSessions = {}; // key: user.id, value: true/false
 
 // Login
 exports.login = async (req, res) => {
@@ -51,6 +53,11 @@ exports.login = async (req, res) => {
         const user = await User.findOne({ where: { email } });
         if (!user) {
             return res.status(401).json({ message: "Email atau password salah" });
+        }
+
+        // 🔹 Cek apakah user sudah login di device lain
+        if (activeSessions[user.id]) {
+            return res.status(403).json({ message: "Akun ini sedang digunakan di perangkat lain." });
         }
 
         // 🔹 Verifikasi password
@@ -66,17 +73,30 @@ exports.login = async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
         );
 
+        // 🔹 Tandai user sedang login (aktif)
+        activeSessions[user.id] = true;
+
         console.log("User ID dari backend:", user.id);
 
         // 🔹 Kirim response dengan token dan role
         res.status(200).json({
             message: "Login berhasil",
             token,
-            role: user.role  // Ini penting untuk Flutter agar bisa menentukan halaman tujuan
+            role: user.role
         });
+
     } catch (error) {
         res.status(500).json({ message: "Terjadi kesalahan", error });
     }
+};
+
+exports.logout = (req, res) => {
+    const userId = req.user.id; // Ambil dari JWT yang sudah diverifikasi
+
+    // Hapus sesi aktif
+    delete activeSessions[userId];
+
+    res.status(200).json({ message: "Logout berhasil" });
 };
 
 // Buat transporter Nodemailer dengan Gmail

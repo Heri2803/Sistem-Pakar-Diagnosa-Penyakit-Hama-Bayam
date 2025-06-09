@@ -80,7 +80,7 @@ class _HamaPageState extends State<HamaPage> {
             : hamaList.length;
     List currentPageData = hamaList.sublist(start, end);
     return Scaffold(
-      appBar: AppBar(title: Text('Halaman Hama')),
+      appBar: AppBar(title: Text('Halaman Hama'), backgroundColor: Color(0xFF9DC08D)),
       body: Column(
         children: [
           SizedBox(height: 20),

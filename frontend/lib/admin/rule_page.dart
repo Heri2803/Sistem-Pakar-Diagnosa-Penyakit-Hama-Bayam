@@ -150,7 +150,7 @@ class _RulePageState extends State<RulePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Data Rules')),
+      appBar: AppBar(title: const Text('Data Rules'), backgroundColor: Color(0xFF9DC08D)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

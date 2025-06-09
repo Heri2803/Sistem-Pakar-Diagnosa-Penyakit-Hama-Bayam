@@ -34,17 +34,24 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
       });
 
       // Dapatkan semua histori terlebih dahulu
-      final allHistori = await apiService.getAllHistori();
+      final allHistori = await apiService.getAllHistori();      // Kumpulkan semua userIds yang unik
+      Set<String> uniqueUserIds = allHistori
+          .where((histori) => histori['userId'] != null)
+          .map((histori) => histori['userId'].toString())
+          .toSet();
 
-      // Kumpulkan semua hasil fetchHistoriDenganDetail untuk setiap user
+      // Jalankan semua fetchHistoriDenganDetail secara paralel
+      List<Future<List<Map<String, dynamic>>>> futures = uniqueUserIds
+          .map((userId) => apiService.fetchHistoriDenganDetail(userId))
+          .toList();
+
+      // Tunggu semua futures selesai
+      List<List<Map<String, dynamic>>> results = await Future.wait(futures);
+      
+      // Gabungkan semua hasil
       List<Map<String, dynamic>> detailedHistori = [];
-      for (var histori in allHistori) {
-        if (histori['userId'] != null) {
-          final userHistori = await apiService.fetchHistoriDenganDetail(
-            histori['userId'].toString(),
-          );
-          detailedHistori.addAll(userHistori);
-        }
+      for (var result in results) {
+        detailedHistori.addAll(result);
       }
 
       // Kelompokkan data berdasarkan user, diagnosa, dan waktu yang sama
@@ -263,15 +270,20 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
                         ),
                       ),
                     ),
-                  ),
-                  // Pagination controls
+                  ),                  // Pagination controls
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: Icon(Icons.first_page),
+                          icon: Icon(Icons.first_page, size: 18),
+                          padding: EdgeInsets.all(4),
+                          constraints: BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           onPressed:
                               _currentPage > 0
                                   ? () {
@@ -282,7 +294,12 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
                                   : null,
                         ),
                         IconButton(
-                          icon: Icon(Icons.chevron_left),
+                          icon: Icon(Icons.chevron_left, size: 18),
+                          padding: EdgeInsets.all(4),
+                          constraints: BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           onPressed:
                               _currentPage > 0
                                   ? () {
@@ -292,14 +309,22 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
                                   }
                                   : null,
                         ),
-                        SizedBox(width: 20),
+                        SizedBox(width: 8),
                         Text(
-                          'Halaman ${_currentPage + 1} dari $_totalPages',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          '${_currentPage + 1} / $_totalPages',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        SizedBox(width: 20),
+                        SizedBox(width: 8),
                         IconButton(
-                          icon: Icon(Icons.chevron_right),
+                          icon: Icon(Icons.chevron_right, size: 18),
+                          padding: EdgeInsets.all(4),
+                          constraints: BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           onPressed:
                               _currentPage < _totalPages - 1
                                   ? () {
@@ -310,7 +335,12 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
                                   : null,
                         ),
                         IconButton(
-                          icon: Icon(Icons.last_page),
+                          icon: Icon(Icons.last_page, size: 18),
+                          padding: EdgeInsets.all(4),
+                          constraints: BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           onPressed:
                               _currentPage < _totalPages - 1
                                   ? () {
@@ -322,16 +352,21 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
                         ),
                       ],
                     ),
-                  ),
-                  // Rows per page selector
+                  ),                  // Rows per page selector
                   Container(
-                    padding: EdgeInsets.only(bottom: 16),
+                    padding: EdgeInsets.only(bottom: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Rows per page: '),
+                        Text(
+                          'Rows per page: ',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         DropdownButton<int>(
                           value: _rowsPerPage,
+                          isDense: true,
+                          menuMaxHeight: 200,
                           items:
                               [10, 20, 50, 100].map((value) {
                                 return DropdownMenuItem<int>(
