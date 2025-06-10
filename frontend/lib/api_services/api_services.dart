@@ -163,11 +163,11 @@ Future<List<Map<String, dynamic>>> fetchHistoriDenganDetail(String userId) async
 }
 
 
-// Tambahkan fungsi getToken
-Future<String?> getToken() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getString('token');
-}
+  // Tambahkan fungsi getToken
+  Future<String?> getToken() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
+  }
 
 // Modifikasi fungsi getAllHistori
 Future<List<Map<String, dynamic>>> getAllHistori() async {
@@ -201,48 +201,199 @@ Future<List<Map<String, dynamic>>> getAllHistori() async {
   }
 }
 
-  // Fungsi Login (dengan perbaikan)
+// Fungsi Login (dengan session management)
   static Future<Map<String, dynamic>> loginUser(
-  String email,
-  String password,
-) async {
-  try {
-    final response = await http.post(
-      Uri.parse("$baseUrl/login"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
+    String email,
+    String password,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/login"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
 
-    print("Response Status: ${response.statusCode}");
-    print("Response Body: ${response.body}");
+      print("Login Response Status: ${response.statusCode}");
+      print("Login Response Body: ${response.body}");
 
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
 
-      // Simpan userId ke SharedPreferences
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      print("User ID dari respons login: ${responseData['userId']}"); // Tambahkan log
-      await prefs.setString('userId', responseData['userId'].toString());
-      await prefs.setString('token', responseData['token']);
-      await prefs.setString('role', responseData['role']);
+        // Simpan data user ke SharedPreferences
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        print("User ID dari respons login: ${responseData['userId']}");
+        
+        await prefs.setString('userId', responseData['userId'].toString());
+        await prefs.setString('token', responseData['token']);
+        await prefs.setString('role', responseData['role']);
+        await prefs.setString('email', email); // Simpan email untuk referensi
 
-      return responseData;
-    } else {
-      throw Exception("Login gagal: ${response.body}");
+        return {
+          'success': true,
+          'message': responseData['message'],
+          'data': responseData,
+        };
+      } else if (response.statusCode == 403) {
+        // Handle akun sedang digunakan di perangkat lain
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': 'device_conflict',
+          'message': errorData['message'] ?? 'Akun sedang digunakan di perangkat lain',
+        };
+      } else if (response.statusCode == 401) {
+        // Handle email/password salah
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': 'invalid_credentials',
+          'message': errorData['message'] ?? 'Email atau password salah',
+        };
+      } else {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': 'unknown',
+          'message': errorData['message'] ?? 'Login gagal',
+        };
+      }
+    } catch (e) {
+      print("Login Error: $e");
+      return {
+        'success': false,
+        'error': 'network',
+        'message': 'Terjadi kesalahan jaringan saat login',
+      };
     }
-  } catch (e) {
-    print("Error: $e");
-    throw Exception("Terjadi kesalahan saat login");
   }
-}
 
-  // Fungsi Logout
-  static Future<void> logoutUser() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+  // Fungsi Logout (dengan API call ke backend)
+  static Future<Map<String, dynamic>> logoutUser() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('token');
+      final String? userId = prefs.getString('userId');
+
+      if (token == null) {
+        // Jika tidak ada token, langsung clear local storage
+        await _clearLocalStorage();
+        return {
+          'success': true,
+          'message': 'Logout berhasil (no active session)',
+        };
+      }
+
+      // Panggil API logout
+      final response = await http.post(
+        Uri.parse("$baseUrl/logout"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({
+          'userId': userId != null ? int.tryParse(userId) : null,
+        }),
+      );
+
+      print("Logout Response Status: ${response.statusCode}");
+      print("Logout Response Body: ${response.body}");
+
+      // Clear local storage terlepas dari response
+      await _clearLocalStorage();
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Logout berhasil',
+        };
+      } else {
+        // Tetap anggap berhasil karena local storage sudah dibersihkan
+        return {
+          'success': true,
+          'message': 'Logout berhasil (force logout)',
+        };
+      }
+    } catch (e) {
+      print("Logout Error: $e");
+      // Tetap clear local storage meski ada error
+      await _clearLocalStorage();
+      return {
+        'success': true,
+        'message': 'Logout berhasil (with error cleanup)',
+      };
+    }
+  }
+
+  // Fungsi untuk membersihkan local storage
+  static Future<void> _clearLocalStorage() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     await prefs.remove('role');
     await prefs.remove('userId');
+    await prefs.remove('email');
   }
+
+  // Fungsi untuk cek apakah user masih login
+  static Future<bool> isLoggedIn() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+    return token != null && token.isNotEmpty;
+  }
+
+  // Fungsi untuk mendapatkan user ID
+  static Future<String?> getUserId() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('userId');
+  }
+
+  // Fungsi untuk mendapatkan role
+  static Future<String?> getUserRole() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('role');
+  }
+
+  // Fungsi Force Logout (untuk debugging atau handling device conflict)
+  static Future<Map<String, dynamic>> forceLogout(String userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/force-logout"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({'userId': int.tryParse(userId)}),
+      );
+
+      print("Force Logout Response Status: ${response.statusCode}");
+      print("Force Logout Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': responseData['message'],
+        };
+      } else {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Force logout gagal',
+        };
+      }
+    } catch (e) {
+      print("Force Logout Error: $e");
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan saat force logout',
+      };
+    }
+  }
+
+  // Fungsi untuk handle session timeout di frontend
+  static Future<void> handleSessionTimeout() async {
+    await _clearLocalStorage();
+    // Tambahkan logic untuk redirect ke login page
+    // Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+
 
   // Fungsi Cek Login
   static Future<String?> checkLoginStatus() async {

@@ -94,7 +94,7 @@ exports.login = async (req, res) => {
             console.log(`User ID ${user.id} (${user.email}) otomatis logout karena timeout`);
             delete activeSessions[user.id];
             delete sessionTimeouts[user.id];
-        }, 5 * 60 * 1000); // 5 menit
+        }, 12 * 60 * 60 * 1000); // 5 menit
 
         console.log("Login berhasil - User ID:", user.id, "Email:", user.email);
         console.log("Active sessions:", Object.keys(activeSessions));
