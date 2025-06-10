@@ -38,31 +38,36 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
   }
 
   Future<void> _simpanHama() async {
-    if (namaController.text.isNotEmpty &&
-        deskripsiController.text.isNotEmpty &&
-        penangananController.text.isNotEmpty &&
-        nilaiPakarController.text.isNotEmpty) {
-      try {
+  if (namaController.text.isNotEmpty &&
+      deskripsiController.text.isNotEmpty &&
+      penangananController.text.isNotEmpty) {
+    try {
+      double? nilaipakar;
+      if (nilaiPakarController.text.isNotEmpty) {
         String nilaiInput = nilaiPakarController.text.replaceAll(',', '.');
-        double nilaiPakar = double.parse(nilaiInput);
-        await apiService.createHama(
-          namaController.text,
-          deskripsiController.text,
-          penangananController.text,
-          _pickedFile,
-          nilaiPakar,         
-        );
-        widget.onHamaAdded();
-        Navigator.pop(context);
-        _showDialog('Berhasil', 'Data hama berhasil ditambahkan.');
-      } catch (e) {
-        _showDialog('Gagal', 'Gagal menambahkan data hama.');
-        print("Error adding hama: $e");
+        nilaipakar = double.parse(nilaiInput);
       }
-    } else {
-      _showDialog('Error', 'Semua field harus diisi.');
+
+      await apiService.createHama(
+        namaController.text,
+        deskripsiController.text,
+        penangananController.text,
+        _pickedFile,
+        nilaipakar, // boleh null
+      );
+
+      widget.onHamaAdded();
+      Navigator.pop(context);
+      _showDialog('Berhasil', 'Data hama berhasil ditambahkan.');
+    } catch (e) {
+      _showDialog('Gagal', 'Gagal menambahkan data hama.');
+      print("Error adding hama: $e");
     }
+  } else {
+    _showDialog('Error', 'Semua field harus diisi (kecuali nilai pakar).');
   }
+}
+
 
   void _showDialog(String title, String message) {
     showDialog(
@@ -142,11 +147,11 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
                           maxLines: 3,
                         ),
                         SizedBox(height: 15),
-                        TextField(
-                          controller: nilaiPakarController,
-                          decoration: InputDecoration(labelText: 'Nilai Pakar'),
-                          maxLines: 3,
-                        ),
+                        // TextField(
+                        //   controller: nilaiPakarController,
+                        //   decoration: InputDecoration(labelText: 'Nilai Pakar'),
+                        //   maxLines: 3,
+                        // ),
                         SizedBox(height: 15),
                         Text('Foto'),
                     (_webImage != null)

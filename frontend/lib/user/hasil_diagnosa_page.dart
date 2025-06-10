@@ -913,7 +913,7 @@ class _HasilDiagnosaPageState extends State<HasilDiagnosaPage> {
           ),
           child: Center(
             child: Text(
-              '${(probabilitas * 100).toStringAsFixed(0)}%',
+              '${(probabilitas * 100).toStringAsFixed(1)}%',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

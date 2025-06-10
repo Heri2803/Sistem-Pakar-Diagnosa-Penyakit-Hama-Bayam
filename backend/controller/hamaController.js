@@ -52,30 +52,36 @@ exports.getHamaById = async (req, res) => {
 exports.createHama = async (req, res) => {
   try {
     const { nama, deskripsi, penanganan, nilai_pakar } = req.body;
-    const file = req.file; 
+    const file = req.file;
 
-    // Cek kode terakhir
+    // Generate kode otomatis
     const lastHama = await Hama.findOne({ order: [['id', 'DESC']] });
-    let newKode = 'H01'; // Default kode awal
+    let newKode = 'H01';
     if (lastHama) {
       const lastNumber = parseInt(lastHama.kode.substring(1)) + 1;
       newKode = `H${lastNumber.toString().padStart(2, '0')}`;
     }
 
-    // Cek kalau ada file yang diupload
+    // Tangani upload file
     let fotoPath = '';
     if (file) {
-      fotoPath = file.filename; 
+      fotoPath = file.filename;
+    }
+
+    // Konversi nilai_pakar agar null jika kosong
+    let nilaiPakar = null;
+    if (nilai_pakar !== undefined && nilai_pakar !== '') {
+      nilaiPakar = parseFloat(nilai_pakar);
     }
 
     const newHama = await Hama.create({
       kode: newKode,
       nama,
-      kategori: 'hama', 
+      kategori: 'hama',
       deskripsi,
       penanganan,
-      foto: fotoPath, 
-      nilai_pakar
+      foto: fotoPath,
+      nilai_pakar: nilaiPakar
     });
 
     res.status(201).json({ message: 'Hama berhasil ditambahkan', data: newHama });
@@ -83,6 +89,7 @@ exports.createHama = async (req, res) => {
     res.status(500).json({ message: 'Gagal menambahkan hama', error: error.message });
   }
 };
+
 
 
 // 🔹 Fungsi untuk mengupdate hama berdasarkan ID

@@ -29,7 +29,7 @@ class _HomePageState extends State<HomePage> {
   void _startAutoLogoutTimer() {
     _logoutTimer?.cancel(); // Pastikan timer sebelumnya di-cancel
 
-    _logoutTimer = Timer(const Duration(minutes: 5), () async {
+    _logoutTimer = Timer(const Duration(hours: 12), () async {
       // Hapus semua data login
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();

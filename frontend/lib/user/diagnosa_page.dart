@@ -57,10 +57,10 @@ class _DiagnosaPageState extends State<DiagnosaPage> {
 
   void prosesHasilDiagnosa() async {
     // Validasi minimal 3 gejala
-    if (gejalaTerpilihIds.length < 3) {
+    if (gejalaTerpilihIds.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Silakan pilih minimal 3 gejala untuk melakukan diagnosa'),
+          content: Text('Silakan pilih minimal 2 gejala untuk melakukan diagnosa'),
           backgroundColor: Color(0xFF9DC08D),
           duration: Duration(seconds: 3),
         ),
@@ -194,7 +194,7 @@ class _DiagnosaPageState extends State<DiagnosaPage> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      "${gejalaTerpilihIds.length}/min 3",
+                                      "${gejalaTerpilihIds.length}/min 2",
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 12,
@@ -227,16 +227,16 @@ class _DiagnosaPageState extends State<DiagnosaPage> {
                                 height: 30,
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: gejalaTerpilihIds.length >= 3 ? Colors.green : Colors.grey,
+                                    backgroundColor: gejalaTerpilihIds.length >= 2 ? Colors.green : Colors.grey,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(15),
                                     ),
                                   ),
-                                  onPressed: gejalaTerpilihIds.length >= 3 ? prosesHasilDiagnosa : null,
+                                  onPressed: gejalaTerpilihIds.length >= 2 ? prosesHasilDiagnosa : null,
                                   child: Text(
-                                    gejalaTerpilihIds.length >= 3 
+                                    gejalaTerpilihIds.length >= 2 
                                         ? "Lihat Hasil Diagnosa" 
-                                        : "Pilih minimal 3 gejala",
+                                        : "Pilih minimal 2 gejala",
                                     style: TextStyle(
                                       color: Colors.white, 
                                       fontSize: 16, 
