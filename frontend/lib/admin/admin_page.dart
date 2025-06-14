@@ -48,6 +48,25 @@ class _AdminPageState extends State<AdminPage> {
     await prefs.setInt(LAST_KNOWN_COUNT_KEY, _lastKnownDiagnosisCount);
   }
 
+  // Method untuk menghitung jumlah diagnosa berdasarkan tanggal unik
+  int _countUniqueByDate(List<dynamic> historiList) {
+    Set<String> uniqueDates = {};
+    
+    for (var histori in historiList) {
+      // Ambil tanggal_diagnosa dari data
+      String? tanggalDiagnosa = histori['tanggal_diagnosa']?.toString();
+      
+      if (tanggalDiagnosa != null && tanggalDiagnosa.isNotEmpty) {
+        // Extract hanya tanggal (YYYY-MM-DD) tanpa waktu
+        String dateOnly = tanggalDiagnosa.split(' ')[0];
+        uniqueDates.add(dateOnly);
+      }
+    }
+    
+    print("Unique dates found: ${uniqueDates.toList()}");
+    return uniqueDates.length;
+  }
+
   // Method untuk memuat data dashboard dari API
   Future<void> _loadDashboardData() async {
     try {
@@ -78,21 +97,33 @@ class _AdminPageState extends State<AdminPage> {
       pestCount = hamaList.length;
       print("Jumlah hama: $pestCount");
 
-      // Modified diagnosis count logic
+      print("Fetching histori data...");
+      // Mengambil data histori dan hitung berdasarkan tanggal unik
       final allHistori = await ApiService().getAllHistori();
-      int currentCount = allHistori.length;
+      print("Total histori records: ${allHistori.length}");
+      
+      // Hitung jumlah diagnosa berdasarkan tanggal unik
+      int currentUniqueCount = _countUniqueByDate(allHistori);
+      print("Unique diagnosis dates: $currentUniqueCount");
 
-      if (currentCount > _lastKnownDiagnosisCount) {
-        int newDiagnoses = currentCount - _lastKnownDiagnosisCount;
+      // Update diagnosis count berdasarkan tanggal unik
+      if (currentUniqueCount > _lastKnownDiagnosisCount) {
+        int newDiagnoses = currentUniqueCount - _lastKnownDiagnosisCount;
         diagnosisCount += newDiagnoses;
-        _lastKnownDiagnosisCount = currentCount;
+        _lastKnownDiagnosisCount = currentUniqueCount;
 
         // Save the updated counts
         await _saveCounts();
 
-        print("New diagnoses added: $newDiagnoses");
+        print("New unique diagnosis dates added: $newDiagnoses");
         print("Total diagnosis count: $diagnosisCount");
+      } else {
+        // Jika tidak ada penambahan, set ke current unique count
+        diagnosisCount = currentUniqueCount;
+        _lastKnownDiagnosisCount = currentUniqueCount;
+        await _saveCounts();
       }
+
     } catch (e) {
       print("Error loading dashboard data: $e");
     } finally {

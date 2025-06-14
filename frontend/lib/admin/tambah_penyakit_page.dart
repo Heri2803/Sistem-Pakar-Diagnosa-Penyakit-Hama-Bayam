@@ -39,27 +39,39 @@ class _TambahPenyakitPageState extends State<TambahPenyakitPage> {
   Future<void> _simpanPenyakit() async {
     if (namaController.text.isNotEmpty &&
         deskripsiController.text.isNotEmpty &&
-        penangananController.text.isNotEmpty &&
-        nilaiPakarController.text.isNotEmpty) {
+        penangananController.text.isNotEmpty) {
       try {
-        String nilaiInput = nilaiPakarController.text.replaceAll(',', '.');
-        double nilaiPakar = double.parse(nilaiInput);
+        // Kirim nilai pakar sebagai double, 0.0 jika tidak diisi
+        double nilaiPakar = 0.0;
+        if (nilaiPakarController.text.trim().isNotEmpty) {
+          String nilaiInput = nilaiPakarController.text.replaceAll(',', '.');
+          nilaiPakar = double.parse(nilaiInput);
+        }
+        
+        print("Debug - Nilai Pakar Double: $nilaiPakar");
+        
+        print("Debug - Nama: ${namaController.text}");
+        print("Debug - Deskripsi: ${deskripsiController.text}");
+        print("Debug - Penanganan: ${penangananController.text}");
+        print("Debug - Nilai Pakar: $nilaiPakar");
+        print("Debug - Image File: $_pickedFile");
+        
         await apiService.createPenyakit(
           namaController.text,
           deskripsiController.text,
           penangananController.text,
           _pickedFile,
-          nilaiPakar,
+          nilaiPakar,         
         );
         widget.onPenyakitAdded();
         Navigator.pop(context);
-        _showDialog('Berhasil', 'Data penyakit berhasil ditambahkan.');
+        _showDialog('Berhasil', 'Data hama berhasil ditambahkan.');
       } catch (e) {
-        _showDialog('Gagal', 'Gagal menambahkan data penyakit.');
-        print("Error adding penyakit: $e");
+        _showDialog('Gagal', 'Gagal menambahkan data hama: $e');
+        print("Error adding hama: $e");
       }
     } else {
-      _showDialog('Error', 'Semua field harus diisi.');
+      _showDialog('Error', 'Nama, deskripsi, dan penanganan hama harus diisi.');
     }
   }
 
@@ -141,11 +153,11 @@ class _TambahPenyakitPageState extends State<TambahPenyakitPage> {
                           maxLines: 3,
                         ),
                         SizedBox(height: 15),
-                        TextField(
-                          controller: nilaiPakarController,
-                          decoration: InputDecoration(labelText: 'nilai pakar'),
-                          maxLines: 3,
-                        ),
+                        // TextField(
+                        //   controller: nilaiPakarController,
+                        //   decoration: InputDecoration(labelText: 'nilai pakar'),
+                        //   maxLines: 3,
+                        // ),
                         SizedBox(height: 15),
                         (_webImage != null)
                         ? Image.memory(

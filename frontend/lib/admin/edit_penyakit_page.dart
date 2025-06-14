@@ -287,24 +287,24 @@ class _EditPenyakitPageState extends State<EditPenyakitPage> {
                       maxLines: 3,
                     ),
                     SizedBox(height: 20),
-                    TextField(
-                      controller: _nilaiPakarController,
-                      decoration: InputDecoration(
-                        labelText: 'Nilai Pakar',
-                        hintText: 'Contoh: 0.5',
-                      ),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (value) {
-                        // Validate as user types (optional)
-                        try {
-                          if (value.isNotEmpty) {
-                            double.parse(value.replaceAll(',', '.'));
-                          }
-                        } catch (e) {
-                          // Could show validation error here
-                        }
-                      },
-                    ),
+                    // TextField(
+                    //   controller: _nilaiPakarController,
+                    //   decoration: InputDecoration(
+                    //     labelText: 'Nilai Pakar',
+                    //     hintText: 'Contoh: 0.5',
+                    //   ),
+                    //   keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    //   onChanged: (value) {
+                    //     // Validate as user types (optional)
+                    //     try {
+                    //       if (value.isNotEmpty) {
+                    //         double.parse(value.replaceAll(',', '.'));
+                    //       }
+                    //     } catch (e) {
+                    //       // Could show validation error here
+                    //     }
+                    //   },
+                    // ),
                     SizedBox(height: 20),
                     Text(
                           'Foto Penyakit',

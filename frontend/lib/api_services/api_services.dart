@@ -899,7 +899,7 @@ Future<List<Map<String, dynamic>>> getAllHistori() async {
     String deskripsi,
     String penanganan,
     XFile? pickedFile,
-    double nilai_pakar
+    double? nilai_pakar
   ) async {
     try {
       var uri = Uri.parse(penyakitUrl);

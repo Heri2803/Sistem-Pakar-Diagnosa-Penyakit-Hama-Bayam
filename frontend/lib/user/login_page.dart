@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:SIBAYAM/user/before_login.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,7 +63,9 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     try {
-      var url = Uri.parse("https://beckend-sistem-pakar-diagnosa-penyakit.onrender.com/api/auth/login");
+      var url = Uri.parse(
+        "https://beckend-sistem-pakar-diagnosa-penyakit.onrender.com/api/auth/login",
+      );
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
@@ -120,7 +123,10 @@ class _LoginPageState extends State<LoginPage> {
             child: IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => BeforeLogin()),
+                );
               },
             ),
           ),

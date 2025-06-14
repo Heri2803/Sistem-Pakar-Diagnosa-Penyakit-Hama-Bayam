@@ -11,8 +11,13 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
   final ApiService apiService = ApiService();
   List<Map<String, dynamic>> historiData = [];
   List<Map<String, dynamic>> groupedHistoriData = [];
+  List<Map<String, dynamic>> filteredHistoriData = []; // Data yang sudah difilter
   bool isLoading = true;
   String? error;
+
+  // Search variables
+  TextEditingController searchController = TextEditingController();
+  String searchQuery = '';
 
   // Pagination variables
   int _rowsPerPage = 10;
@@ -24,6 +29,35 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
   void initState() {
     super.initState();
     _loadHistoriData();
+    searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    searchController.removeListener(_onSearchChanged);
+    searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      searchQuery = searchController.text.toLowerCase();
+      _filterData();
+      _updatePagination(0); // Reset ke halaman pertama saat search
+    });
+  }
+
+  void _filterData() {
+    if (searchQuery.isEmpty) {
+      filteredHistoriData = List.from(groupedHistoriData);
+    } else {
+      filteredHistoriData = groupedHistoriData.where((histori) {
+        final userName = (histori['userName'] ?? '').toString().toLowerCase();
+        final diagnosa = (histori['diagnosa'] ?? '').toString().toLowerCase();
+        
+        return userName.contains(searchQuery) || diagnosa.contains(searchQuery);
+      }).toList();
+    }
   }
 
   Future<void> _loadHistoriData() async {
@@ -34,7 +68,9 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
       });
 
       // Dapatkan semua histori terlebih dahulu
-      final allHistori = await apiService.getAllHistori();      // Kumpulkan semua userIds yang unik
+      final allHistori = await apiService.getAllHistori();
+      
+      // Kumpulkan semua userIds yang unik
       Set<String> uniqueUserIds = allHistori
           .where((histori) => histori['userId'] != null)
           .map((histori) => histori['userId'].toString())
@@ -60,6 +96,7 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
       setState(() {
         historiData = detailedHistori; // Simpan data asli jika perlu
         groupedHistoriData = groupedData; // Data yang sudah dikelompokkan
+        filteredHistoriData = List.from(groupedData); // Initialize filtered data
         _updatePagination(0); // Set halaman pertama
         isLoading = false;
       });
@@ -104,8 +141,8 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
         diagnosa = 'Tidak ada diagnosa';
       }
 
-      // Ambil nama user dari kolom 'nama' atau 'name' (sesuaikan dengan struktur data Anda)
-     String userName = item['name']?.toString() ?? 'User ID: ${item['userId']}';
+      // Ambil nama user dari kolom 'nama' atau 'name'
+      String userName = item['name']?.toString() ?? 'User ID: ${item['userId']}';
 
       // Buat composite key: userId + waktu + diagnosa
       String key = '${item['userId']}_${formattedTime}_$diagnosa';
@@ -116,7 +153,7 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
 
         groupedMap[key] = {
           'userId': item['userId'],
-          'userName': userName, // Menampilkan nama user, bukan ID
+          'userName': userName,
           'diagnosa': diagnosa,
           'tanggal_diagnosa': item['tanggal_diagnosa'],
           'tanggal_display': displayDate,
@@ -124,7 +161,8 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
           'hasil': item['hasil'],
           'penyakit_nama': item['penyakit_nama'],
           'hama_nama': item['hama_nama'],
-          'sortTime': dateTime.millisecondsSinceEpoch, // untuk pengurutan
+          'sortTime': dateTime.millisecondsSinceEpoch,
+          'detailData': [], // Menyimpan semua item detail untuk halaman detail
         };
       }
 
@@ -133,6 +171,9 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
           !groupedMap[key]!['gejala'].contains(item['gejala_nama'])) {
         groupedMap[key]!['gejala'].add(item['gejala_nama']);
       }
+
+      // Simpan data detail untuk halaman detail
+      groupedMap[key]!['detailData'].add(item);
     }
 
     // Konversi map ke list dan urutkan berdasarkan waktu terbaru
@@ -147,20 +188,30 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
   // Update pagination
   void _updatePagination(int page) {
     _currentPage = page;
-    _totalPages = (groupedHistoriData.length / _rowsPerPage).ceil();
+    _totalPages = (filteredHistoriData.length / _rowsPerPage).ceil();
 
     int startIndex = page * _rowsPerPage;
     int endIndex = (page + 1) * _rowsPerPage;
 
-    if (endIndex > groupedHistoriData.length) {
-      endIndex = groupedHistoriData.length;
+    if (endIndex > filteredHistoriData.length) {
+      endIndex = filteredHistoriData.length;
     }
 
-    if (startIndex >= groupedHistoriData.length) {
+    if (startIndex >= filteredHistoriData.length) {
       _currentPageData = [];
     } else {
-      _currentPageData = groupedHistoriData.sublist(startIndex, endIndex);
+      _currentPageData = filteredHistoriData.sublist(startIndex, endIndex);
     }
+  }
+
+  // Navigasi ke halaman detail
+  void _navigateToDetail(Map<String, dynamic> histori) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailHistoriPage(histori: histori),
+      ),
+    );
   }
 
   @override
@@ -170,224 +221,477 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
         title: Text('Riwayat Diagnosa'),
         backgroundColor: Color(0xFF9DC08D),
       ),
-      body:
-          isLoading
-              ? Center(child: CircularProgressIndicator())
-              : error != null
-              ? Center(child: Text('Error: $error'))
-              : groupedHistoriData.isEmpty
-              ? Center(child: Text('Tidak ada data riwayat diagnosa'))
-              : Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SingleChildScrollView(
-                        child: DataTable(
-                          columnSpacing: 20,
-                          headingRowColor: MaterialStateProperty.all(
-                            Color(0xFF9DC08D).withOpacity(0.3),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : error != null
+          ? Center(child: Text('Error: $error'))
+          : groupedHistoriData.isEmpty
+          ? Center(child: Text('Tidak ada data riwayat diagnosa'))
+          : Column(
+              children: [
+                // Search Bar
+                Container(
+                  margin: EdgeInsets.all(16),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Cari berdasarkan nama user atau diagnosa...',
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Color(0xFF9DC08D),
+                      ),
+                      suffixIcon: searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Color(0xFF9DC08D)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Color(0xFF9DC08D), width: 2),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                  ),
+                ),
+                
+                Expanded(
+                  child: filteredHistoriData.isEmpty && searchQuery.isNotEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.search_off,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Tidak ada hasil untuk "${searchController.text}"',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Coba gunakan kata kunci yang berbeda',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
                           ),
-                          columns: [
-                            DataColumn(
-                              label: Text(
-                                'Nama User',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Gejala',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Diagnosa',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Hasil',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Tanggal',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                          rows:
-                              _currentPageData.map((histori) {
-                                // Gabungkan semua gejala menjadi satu string dengan koma
-                                String gejalaText = "Tidak ada gejala";
-                                if (histori['gejala'] != null &&
-                                    (histori['gejala'] as List).isNotEmpty) {
-                                  gejalaText = (histori['gejala'] as List).join(
-                                    ', ',
-                                  );
-                                }
-
-                                return DataRow(
-                                  cells: [
-                                    DataCell(Text(histori['userName'] ?? 'User tidak ditemukan')),
-                                    DataCell(
-                                      Container(
-                                        constraints: BoxConstraints(
-                                          maxWidth: 200,
-                                        ),
-                                        child: Tooltip(
-                                          message: gejalaText,
-                                          child: Text(
-                                            gejalaText,
-                                            overflow: TextOverflow.ellipsis,
+                        )
+                      : ListView.builder(
+                          itemCount: _currentPageData.length,
+                          itemBuilder: (context, index) {
+                            final histori = _currentPageData[index];
+                            
+                            return Container(
+                              margin: EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                              child: Row(
+                                children: [
+                                  // Card dengan informasi histori
+                                  Expanded(
+                                    child: Card(
+                                      elevation: 2,
+                                      child: InkWell(
+                                        onTap: () => _navigateToDetail(histori),
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              // Nama User
+                                              Text(
+                                                histori['userName'] ?? 'User tidak ditemukan',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              SizedBox(height: 8),
+                                              // Diagnosa
+                                              Text(
+                                                histori['diagnosa'] ?? 'Tidak ada diagnosa',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              SizedBox(height: 4),
+                                              // Tanggal
+                                              Text(
+                                                histori['tanggal_display'] ?? '',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),
                                     ),
-                                    DataCell(
-                                      Text(
-                                        histori['diagnosa'] ??
-                                            'Tidak ada diagnosa',
-                                        style: TextStyle(
-                                        
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  // Button detail di luar card
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFF9DC08D),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    DataCell(
-                                      Text(_formatHasil(histori['hasil'])),
+                                    child: IconButton(
+                                      icon: Icon(Icons.info_outline, color: Colors.white),
+                                      onPressed: () => _navigateToDetail(histori),
+                                      tooltip: 'Lihat Detail',
                                     ),
-                                    DataCell(
-                                      Text(histori['tanggal_display'] ?? ''),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                        ),
-                      ),
-                    ),
-                  ),                  // Pagination controls
-                  Container(
-                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.first_page, size: 18),
-                          padding: EdgeInsets.all(4),
-                          constraints: BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          onPressed:
-                              _currentPage > 0
-                                  ? () {
-                                    setState(() {
-                                      _updatePagination(0);
-                                    });
-                                  }
-                                  : null,
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.chevron_left, size: 18),
-                          padding: EdgeInsets.all(4),
-                          constraints: BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          onPressed:
-                              _currentPage > 0
-                                  ? () {
-                                    setState(() {
-                                      _updatePagination(_currentPage - 1);
-                                    });
-                                  }
-                                  : null,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          '${_currentPage + 1} / $_totalPages',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        IconButton(
-                          icon: Icon(Icons.chevron_right, size: 18),
-                          padding: EdgeInsets.all(4),
-                          constraints: BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          onPressed:
-                              _currentPage < _totalPages - 1
-                                  ? () {
-                                    setState(() {
-                                      _updatePagination(_currentPage + 1);
-                                    });
-                                  }
-                                  : null,
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.last_page, size: 18),
-                          padding: EdgeInsets.all(4),
-                          constraints: BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          onPressed:
-                              _currentPage < _totalPages - 1
-                                  ? () {
-                                    setState(() {
-                                      _updatePagination(_totalPages - 1);
-                                    });
-                                  }
-                                  : null,
-                        ),
-                      ],
-                    ),
-                  ),                  // Rows per page selector
-                  Container(
-                    padding: EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Rows per page: ',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        DropdownButton<int>(
-                          value: _rowsPerPage,
-                          isDense: true,
-                          menuMaxHeight: 200,
-                          items:
-                              [10, 20, 50, 100].map((value) {
-                                return DropdownMenuItem<int>(
-                                  value: value,
-                                  child: Text('$value'),
-                                );
-                              }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _rowsPerPage = value!;
-                              _updatePagination(
-                                0,
-                              ); // Kembali ke halaman pertama
-                            });
+                                  ),
+                                ],
+                              ),
+                            );
                           },
                         ),
-                      ],
-                    ),
+                ),
+
+                // Pagination controls
+                Container(
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.first_page, size: 18),
+                        padding: EdgeInsets.all(4),
+                        constraints: BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: _currentPage > 0
+                            ? () {
+                                setState(() {
+                                  _updatePagination(0);
+                                });
+                              }
+                            : null,
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.chevron_left, size: 18),
+                        padding: EdgeInsets.all(4),
+                        constraints: BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: _currentPage > 0
+                            ? () {
+                                setState(() {
+                                  _updatePagination(_currentPage - 1);
+                                });
+                              }
+                            : null,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        '${_currentPage + 1} / $_totalPages',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      IconButton(
+                        icon: Icon(Icons.chevron_right, size: 18),
+                        padding: EdgeInsets.all(4),
+                        constraints: BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: _currentPage < _totalPages - 1
+                            ? () {
+                                setState(() {
+                                  _updatePagination(_currentPage + 1);
+                                });
+                              }
+                            : null,
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.last_page, size: 18),
+                        padding: EdgeInsets.all(4),
+                        constraints: BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: _currentPage < _totalPages - 1
+                            ? () {
+                                setState(() {
+                                  _updatePagination(_totalPages - 1);
+                                });
+                              }
+                            : null,
+                      ),
+                    ],
                   ),
-                ],
+                ),
+
+                // Rows per page selector
+                Container(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Rows per page: ',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      DropdownButton<int>(
+                        value: _rowsPerPage,
+                        isDense: true,
+                        menuMaxHeight: 200,
+                        items: [10, 20, 50, 100].map((value) {
+                          return DropdownMenuItem<int>(
+                            value: value,
+                            child: Text('$value'),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _rowsPerPage = value!;
+                            _updatePagination(0);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Color _getDiagnosaColor(Map<String, dynamic> histori) {
+    if (histori['penyakit_nama'] != null) {
+      return Colors.red[700]!;
+    } else if (histori['hama_nama'] != null) {
+      return Colors.amber[800]!;
+    }
+    return Colors.black;
+  }
+
+  String _formatHasil(dynamic hasil) {
+    if (hasil == null) return '0%';
+    double hasilValue = double.tryParse(hasil.toString()) ?? 0.0;
+    return '${(hasilValue * 100).toStringAsFixed(2)}%';
+  }
+}
+
+// Halaman Detail Histori
+class DetailHistoriPage extends StatelessWidget {
+  final Map<String, dynamic> histori;
+
+  const DetailHistoriPage({Key? key, required this.histori}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Gabungkan semua gejala menjadi satu string
+    String gejalaText = "Tidak ada gejala";
+    if (histori['gejala'] != null && (histori['gejala'] as List).isNotEmpty) {
+      gejalaText = (histori['gejala'] as List).join(', ');
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Detail Riwayat Diagnosa'),
+        backgroundColor: Color(0xFF9DC08D),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Card(
+          elevation: 4,
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF9DC08D).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Informasi Diagnosa',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF9DC08D),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                SizedBox(height: 20),
+
+                // Nama User
+                _buildDetailRow(
+                  'Nama User',
+                  histori['userName'] ?? 'User tidak ditemukan',
+                  Icons.person,
+                ),
+
+                SizedBox(height: 16),
+
+                // Tanggal Diagnosa
+                _buildDetailRow(
+                  'Tanggal Diagnosa',
+                  histori['tanggal_display'] ?? '',
+                  Icons.calendar_today,
+                ),
+
+                SizedBox(height: 16),
+
+                // Diagnosa
+                _buildDetailRow(
+                  'Diagnosa',
+                  histori['diagnosa'] ?? 'Tidak ada diagnosa',
+                  Icons.medical_services,
+                ),
+
+                SizedBox(height: 16),
+
+                // Hasil
+                _buildDetailRow(
+                  'Hasil',
+                  _formatHasil(histori['hasil']),
+                  Icons.analytics,
+                ),
+
+                SizedBox(height: 16),
+
+                // Gejala
+                _buildDetailSection(
+                  'Gejala yang Dipilih',
+                  gejalaText,
+                  Icons.list_alt,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    String label,
+    String value,
+    IconData icon, {
+    Color? valueColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Color(0xFF9DC08D),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.grey[700],
+            ),
+          ),
+        ),
+        Text(
+          ': ',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: valueColor ?? Colors.black87,
+              fontWeight: valueColor != null ? FontWeight.w500 : FontWeight.normal,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailSection(
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: Color(0xFF9DC08D),
+            ),
+            SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: Colors.grey[700],
               ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

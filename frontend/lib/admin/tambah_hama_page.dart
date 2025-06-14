@@ -38,36 +38,43 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
   }
 
   Future<void> _simpanHama() async {
-  if (namaController.text.isNotEmpty &&
-      deskripsiController.text.isNotEmpty &&
-      penangananController.text.isNotEmpty) {
-    try {
-      double? nilaipakar;
-      if (nilaiPakarController.text.isNotEmpty) {
-        String nilaiInput = nilaiPakarController.text.replaceAll(',', '.');
-        nilaipakar = double.parse(nilaiInput);
+    if (namaController.text.isNotEmpty &&
+        deskripsiController.text.isNotEmpty &&
+        penangananController.text.isNotEmpty) {
+      try {
+        // Kirim nilai pakar sebagai double, 0.0 jika tidak diisi
+        double nilaiPakar = 0.0;
+        if (nilaiPakarController.text.trim().isNotEmpty) {
+          String nilaiInput = nilaiPakarController.text.replaceAll(',', '.');
+          nilaiPakar = double.parse(nilaiInput);
+        }
+        
+        print("Debug - Nilai Pakar Double: $nilaiPakar");
+        
+        print("Debug - Nama: ${namaController.text}");
+        print("Debug - Deskripsi: ${deskripsiController.text}");
+        print("Debug - Penanganan: ${penangananController.text}");
+        print("Debug - Nilai Pakar: $nilaiPakar");
+        print("Debug - Image File: $_pickedFile");
+        
+        await apiService.createHama(
+          namaController.text,
+          deskripsiController.text,
+          penangananController.text,
+          _pickedFile,
+          nilaiPakar,         
+        );
+        widget.onHamaAdded();
+        Navigator.pop(context);
+        _showDialog('Berhasil', 'Data hama berhasil ditambahkan.');
+      } catch (e) {
+        _showDialog('Gagal', 'Gagal menambahkan data hama: $e');
+        print("Error adding hama: $e");
       }
-
-      await apiService.createHama(
-        namaController.text,
-        deskripsiController.text,
-        penangananController.text,
-        _pickedFile,
-        nilaipakar, // boleh null
-      );
-
-      widget.onHamaAdded();
-      Navigator.pop(context);
-      _showDialog('Berhasil', 'Data hama berhasil ditambahkan.');
-    } catch (e) {
-      _showDialog('Gagal', 'Gagal menambahkan data hama.');
-      print("Error adding hama: $e");
+    } else {
+      _showDialog('Error', 'Nama, deskripsi, dan penanganan hama harus diisi.');
     }
-  } else {
-    _showDialog('Error', 'Semua field harus diisi (kecuali nilai pakar).');
   }
-}
-
 
   void _showDialog(String title, String message) {
     showDialog(
@@ -149,8 +156,11 @@ class _TambahHamaPageState extends State<TambahHamaPage> {
                         SizedBox(height: 15),
                         // TextField(
                         //   controller: nilaiPakarController,
-                        //   decoration: InputDecoration(labelText: 'Nilai Pakar'),
-                        //   maxLines: 3,
+                        //   decoration: InputDecoration(
+                        //     labelText: 'Nilai Pakar (Optional)',
+                        //     hintText: 'Masukkan nilai pakar (opsional)',
+                        //   ),
+                        //   keyboardType: TextInputType.numberWithOptions(decimal: true),
                         // ),
                         SizedBox(height: 15),
                         Text('Foto'),
