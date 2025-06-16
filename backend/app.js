@@ -65,7 +65,7 @@ initializeDatabase()
     .then(() => {
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
-            console.log(`Swagger UI available at http://localhost:${PORT}/api-sibayam`);
+            console.log(`Swagger UI available at http://202.74.74.214/api-sibayam/docs`);
         });
     })
     .catch((error) => {
