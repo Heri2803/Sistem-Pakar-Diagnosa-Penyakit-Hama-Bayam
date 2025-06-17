@@ -63,7 +63,7 @@ class _ProfilPageState extends State<ProfilPage> {
       }
 
       // Buat URL untuk endpoint user API
-      var url = Uri.parse("https://beckend-sistem-pakar-diagnosa-penyakit.onrender.com/api/users");
+      var url = Uri.parse("http://202.74.74.214/api/users");
 
       // Kirim permintaan GET dengan token autentikasi
       var response = await http.get(

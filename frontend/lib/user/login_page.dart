@@ -64,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       var url = Uri.parse(
-        "https://beckend-sistem-pakar-diagnosa-penyakit.onrender.com/api/auth/login",
+        "http://202.74.74.214/api/auth/login",
       );
       var response = await http.post(
         url,
