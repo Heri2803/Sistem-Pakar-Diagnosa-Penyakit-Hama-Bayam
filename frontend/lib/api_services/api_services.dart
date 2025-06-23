@@ -7,15 +7,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://202.74.74.214/api/auth';
-  static const String gejalaUrl = 'http://202.74.74.214/api/gejala';
-  static const String hamaUrl = 'http://202.74.74.214/api/hama';
-  static const String penyakitUrl = 'http://202.74.74.214/api/penyakit';
-  static const String rulesPenyakitUrl ='http://202.74.74.214/api/rules_penyakit';
-  static const String rulesHamaUrl = 'http://202.74.74.214/api/rules_hama';
-  static const String userUrl = 'http://202.74.74.214/api/users';
-  static const String diagnosaUrl = 'http://202.74.74.214/api/diagnosa';
-  static const String historiUrl = 'http://202.74.74.214/api/histori';
+  static const String baseUrl = 'http://202.74.74.214:5000/api/auth';
+  static const String gejalaUrl = 'http://202.74.74.214:5000/api/gejala';
+  static const String hamaUrl = 'http://202.74.74.214:5000/api/hama';
+  static const String penyakitUrl = 'http://202.74.74.214:5000/api/penyakit';
+  static const String rulesPenyakitUrl ='http://202.74.74.214:5000/api/rules_penyakit';
+  static const String rulesHamaUrl = 'http://202.74.74.214:5000/api/rules_hama';
+  static const String userUrl = 'http://202.74.74.214:5000/api/users';
+  static const String diagnosaUrl = 'http://202.74.74.214:5000/api/diagnosa';
+  static const String historiUrl = 'http://202.74.74.214:5000/api/histori';
   static const Duration timeout = Duration(seconds: 15);
 
 /// Fungsi untuk mengirim gejala dan menerima hasil diagnosa
@@ -573,7 +573,7 @@ Future<List<Map<String, dynamic>>> getAllHistori() async {
 
   Future<Uint8List?> getHamaImageBytesByFilename(String filename) async {
   try {
-    final url = Uri.parse('http://202.74.74.214/image_hama/$filename');
+    final url = Uri.parse('http://202.74.74.214:5000/image_hama/$filename');
     print('Fetching image from: $url');
     final response = await http.get(url);
 
@@ -875,7 +875,7 @@ Future<List<Map<String, dynamic>>> getAllHistori() async {
 
   Future<Uint8List?> getPenyakitImageBytesByFilename(String filename) async {
   try {
-    final url = Uri.parse('http://202.74.74.214/image_penyakit/$filename');
+    final url = Uri.parse('http://202.74.74.214:5000/image_penyakit/$filename');
     print('Fetching image from: $url');
     final response = await http.get(url);
 
@@ -1424,6 +1424,48 @@ Future<Map<String, dynamic>?> getUserById(String userId) async {
     return null;
   }
 }
+/// Fungsi untuk menghapus histori berdasarkan userId dan tanggalDiagnosa
+  Future<Map<String, dynamic>> deleteHistoriByUserAndDate({
+    required String userId,
+    required String tanggalDiagnosa,
+  }) async {
+    final url = Uri.parse('$historiUrl/delete');
+
+    try {
+      final response = await http.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': userId,
+          'tanggal_diagnosa': tanggalDiagnosa,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': jsonDecode(response.body)['message'],
+          'data': jsonDecode(response.body)['data']
+        };
+      } else {
+        return {
+          'success': false,
+          'message': jsonDecode(response.body)['message'],
+          'error': jsonDecode(response.body)['error'] ?? 'Terjadi kesalahan',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan koneksi',
+        'error': e.toString(),
+      };
+    }
+  }
+
 
 }
 

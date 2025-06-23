@@ -64,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       var url = Uri.parse(
-        "http://202.74.74.214/api/auth/login",
+        "http://202.74.74.214:5000/api/auth/login",
       );
       var response = await http.post(
         url,

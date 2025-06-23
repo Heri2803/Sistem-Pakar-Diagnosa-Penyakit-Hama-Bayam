@@ -17,12 +17,19 @@ class RiwayatDiagnosaPage extends StatefulWidget {
 
 class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
   List<Map<String, dynamic>> _riwayatData = [];
+  List<Map<String, dynamic>> _filteredRiwayatData = [];
   final ApiService apiService = ApiService();
   bool _isLoading = true;
   String? _errorMessage;
   String? _userId;
   String? _token;
   String? _email;
+  
+  // Filter variables
+  int? _selectedYear;
+  int? _selectedMonth;
+  List<int> _availableYears = [];
+  List<int> _availableMonths = [];
 
   @override
   void initState() {
@@ -95,7 +102,7 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
     try {
       // Buat URL untuk endpoint user API
       var url = Uri.parse(
-        "http://202.74.74.214/api/users",
+        "http://202.74.74.214:5000/api/users",
       );
 
       // Kirim permintaan GET dengan token autentikasi
@@ -242,6 +249,8 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
           'id_penyakit': idPenyakit,
           'id_hama': idHama,
           'timestamp': rawDateTime, // menyimpan waktu untuk sorting
+          'dateTime': dateTime, // Tambahkan DateTime object untuk filtering
+          'composite_key': compositeKey, // Tambahkan composite key untuk delete
         };
       }
 
@@ -281,10 +290,13 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
       final groupedData = _groupHistoriByDiagnosis(historiResponse);
 
       setState(() {
-        _riwayatData =
-            groupedData; // Use groupedData instead of historiResponse
+        _riwayatData = groupedData;
+        _filteredRiwayatData = List.from(groupedData);
         _isLoading = false;
       });
+
+      // Extract available years and months for filter
+      _extractAvailableYearsAndMonths();
 
       print("Successfully fetched ${_riwayatData.length} history records");
     } catch (e) {
@@ -294,6 +306,274 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
         _errorMessage = "Gagal memuat data riwayat: ${e.toString()}";
       });
     }
+  }
+
+  void _extractAvailableYearsAndMonths() {
+    Set<int> years = {};
+    Set<int> months = {};
+
+    for (var riwayat in _riwayatData) {
+      if (riwayat['dateTime'] != null) {
+        DateTime dateTime = riwayat['dateTime'];
+        years.add(dateTime.year);
+        months.add(dateTime.month);
+      }
+    }
+
+    setState(() {
+      _availableYears = years.toList()..sort((a, b) => b.compareTo(a));
+      _availableMonths = months.toList()..sort();
+    });
+  }
+
+  void _applyFilter() {
+    setState(() {
+      _filteredRiwayatData = _riwayatData.where((riwayat) {
+        if (riwayat['dateTime'] == null) return false;
+        
+        DateTime dateTime = riwayat['dateTime'];
+        
+        bool yearMatch = _selectedYear == null || dateTime.year == _selectedYear;
+        bool monthMatch = _selectedMonth == null || dateTime.month == _selectedMonth;
+        
+        return yearMatch && monthMatch;
+      }).toList();
+    });
+  }
+
+  void _clearFilter() {
+    setState(() {
+      _selectedYear = null;
+      _selectedMonth = null;
+      _filteredRiwayatData = List.from(_riwayatData);
+    });
+  }
+
+  Future<void> _deleteRiwayat(String compositeKey) async {
+  try {
+    // Cari data riwayat berdasarkan composite key
+    Map<String, dynamic>? riwayatToDelete;
+    for (var riwayat in _riwayatData) {
+      if (riwayat['composite_key'] == compositeKey) {
+        riwayatToDelete = riwayat;
+        break;
+      }
+    }
+
+    if (riwayatToDelete == null) {
+      throw Exception('Data riwayat tidak ditemukan');
+    }
+
+    // Show confirmation dialog
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Konfirmasi Hapus'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Apakah Anda yakin ingin menghapus riwayat diagnosa ini?'),
+              SizedBox(height: 8),
+              Text(
+                'Diagnosis: ${riwayatToDelete!['diagnosis']}',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text('Tanggal: ${riwayatToDelete['tanggal_diagnosa']}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 20),
+                  Text("Menghapus data..."),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      // Panggil API untuk menghapus data berdasarkan userId dan tanggal
+      final result = await apiService.deleteHistoriByUserAndDate(
+        userId: _userId!,
+        tanggalDiagnosa: riwayatToDelete['tanggal_diagnosa_raw'],
+      );
+
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      if (result['success']) {
+        // Remove from local data jika API berhasil
+        setState(() {
+          _riwayatData.removeWhere((item) => item['composite_key'] == compositeKey);
+          _filteredRiwayatData.removeWhere((item) => item['composite_key'] == compositeKey);
+        });
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Riwayat berhasil dihapus'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Gagal menghapus riwayat'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  } catch (e) {
+    // Close loading dialog if still open
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    
+    print("Error deleting riwayat: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Gagal menghapus riwayat: ${e.toString()}'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+}
+
+  Widget _buildFilterSection() {
+    return Card(
+      margin: EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Filter Riwayat',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    decoration: InputDecoration(
+                      labelText: 'Tahun',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    value: _selectedYear,
+                    items: [
+                      DropdownMenuItem<int>(
+                        value: null,
+                        child: Text('Semua Tahun'),
+                      ),
+                      ..._availableYears.map((year) => DropdownMenuItem<int>(
+                        value: year,
+                        child: Text(year.toString()),
+                      )),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedYear = value;
+                      });
+                      _applyFilter();
+                    },
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    decoration: InputDecoration(
+                      labelText: 'Bulan',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    value: _selectedMonth,
+                    items: [
+                      DropdownMenuItem<int>(
+                        value: null,
+                        child: Text('Semua Bulan'),
+                      ),
+                      ...List.generate(12, (index) => index + 1).map((month) {
+                        List<String> monthNames = [
+                          'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                          'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                        ];
+                        return DropdownMenuItem<int>(
+                          value: month,
+                          child: Text(monthNames[month - 1]),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedMonth = value;
+                      });
+                      _applyFilter();
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (_selectedYear != null || _selectedMonth != null) ...[
+              SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _clearFilter,
+                  icon: Icon(Icons.clear, size: 16),
+                  label: Text('Hapus Filter'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey[600],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildErrorWidget() {
@@ -330,7 +610,9 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
           Icon(Icons.history, size: 60, color: Colors.white70),
           SizedBox(height: 16),
           Text(
-            'Belum ada riwayat diagnosa.',
+            _selectedYear != null || _selectedMonth != null
+                ? 'Tidak ada riwayat diagnosa untuk filter yang dipilih.'
+                : 'Belum ada riwayat diagnosa.',
             style: TextStyle(color: Colors.white, fontSize: 16),
             textAlign: TextAlign.center,
           ),
@@ -360,174 +642,203 @@ class _RiwayatDiagnosaPageState extends State<RiwayatDiagnosaPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child:
-            _isLoading
-                ? Center(child: CircularProgressIndicator(color: Colors.white))
-                : _errorMessage != null
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator(color: Colors.white))
+            : _errorMessage != null
                 ? _buildErrorWidget()
-                : _riwayatData.isEmpty
-                ? _buildEmptyHistoryWidget()
-                : ListView.builder(
-                  itemCount: _riwayatData.length,
-                  itemBuilder: (context, index) {
-                    final riwayat = _riwayatData[index];
+                : Column(
+                    children: [
+                      _buildFilterSection(),
+                      Expanded(
+                        child: _filteredRiwayatData.isEmpty
+                            ? _buildEmptyHistoryWidget()
+                            : ListView.builder(
+                                itemCount: _filteredRiwayatData.length,
+                                itemBuilder: (context, index) {
+                                  final riwayat = _filteredRiwayatData[index];
 
-                    // Safely handle potential null values
-                    List<dynamic> gejalaList = [];
-                    if (riwayat.containsKey('gejala') &&
-                        riwayat['gejala'] != null) {
-                      gejalaList = riwayat['gejala'] as List<dynamic>;
-                    }
+                                  // Safely handle potential null values
+                                  List<dynamic> gejalaList = [];
+                                  if (riwayat.containsKey('gejala') &&
+                                      riwayat['gejala'] != null) {
+                                    gejalaList = riwayat['gejala'] as List<dynamic>;
+                                  }
 
-                    final gejalaText =
-                        gejalaList.isEmpty
-                            ? "Tidak ada gejala tercatat"
-                            : gejalaList.join(', ');
+                                  final gejalaText = gejalaList.isEmpty
+                                      ? "Tidak ada gejala tercatat"
+                                      : gejalaList.join(', ');
 
-                    // Mendapatkan jenis diagnosis (penyakit/hama/keduanya)
-                    final String diagnosisType =
-                        riwayat['diagnosis_type'] ?? 'Tidak diketahui';
+                                  // Mendapatkan jenis diagnosis (penyakit/hama/keduanya)
+                                  final String diagnosisType =
+                                      riwayat['diagnosis_type'] ?? 'Tidak diketahui';
 
-                    // Mendapatkan badge warna berdasarkan jenis diagnosis
-                    Color badgeColor;
-                    switch (diagnosisType) {
-                      case 'penyakit':
-                        badgeColor = Color(0xFF9DC08D); // Warna untuk penyakit
-                        break;
-                      case 'hama':
-                        badgeColor = Color(
-                          0xFF7A9A6D,
-                        ); // Warna lebih gelap untuk hama
-                        break;
-                      case 'penyakit & hama':
-                        badgeColor = Color(
-                          0xFF5C7452,
-                        ); // Warna paling gelap untuk kombinasi
-                        break;
-                      default:
-                        badgeColor = Colors.grey[300]!;
-                    }
+                                  // Mendapatkan badge warna berdasarkan jenis diagnosis
+                                  Color badgeColor;
+                                  switch (diagnosisType) {
+                                    case 'penyakit':
+                                      badgeColor = Color(0xFF9DC08D); // Warna untuk penyakit
+                                      break;
+                                    case 'hama':
+                                      badgeColor = Color(
+                                        0xFF7A9A6D,
+                                      ); // Warna lebih gelap untuk hama
+                                      break;
+                                    case 'penyakit & hama':
+                                      badgeColor = Color(
+                                        0xFF5C7452,
+                                      ); // Warna paling gelap untuk kombinasi
+                                      break;
+                                    default:
+                                      badgeColor = Colors.grey[300]!;
+                                  }
 
-                    return Card(
-                      margin: EdgeInsets.only(bottom: 12.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 3,
-                      child: Column(
-                        children: [
-                          // Header dengan waktu diagnosa
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Color(0xFFE1EDD5),
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                topRight: Radius.circular(12),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Icon(
-                                  Icons.access_time,
-                                  size: 18,
-                                  color: Colors.grey[700],
-                                ),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '${riwayat['tanggal_diagnosa'] ?? "Tanggal tidak tersedia"}',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey[700],
+                                  return Card(
+                                    margin: EdgeInsets.only(bottom: 12.0),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                  ),
-                                ),
-                                // Badge jenis diagnosis
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: badgeColor,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    diagnosisType,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Content
-                          Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Diagnosis: ${riwayat['diagnosis']}',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Gejala: $gejalaText',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Hasil: ${riwayat['hasil'] != null ? "${(((riwayat['hasil'] as num) * 1000).floor() / 10).toStringAsFixed(1)}%" : "-"}',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                                SizedBox(height: 12),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      print(
-                                        "Navigating to DetailRiwayatPage with data: $riwayat",
-                                      );
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => DetailRiwayatPage(
-                                                detailRiwayat:
-                                                    riwayat, // Kirim data riwayat ke halaman detail
+                                    elevation: 3,
+                                    child: Column(
+                                      children: [
+                                        // Header dengan waktu diagnosa
+                                        Container(
+                                          width: double.infinity,
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Color(0xFFE1EDD5),
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(12),
+                                              topRight: Radius.circular(12),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.access_time,
+                                                    size: 18,
+                                                    color: Colors.grey[700],
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Text(
+                                                    '${riwayat['tanggal_diagnosa'] ?? "Tanggal tidak tersedia"}',
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.grey[700],
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
+                                              Row(
+                                                children: [
+                                                  // Badge jenis diagnosis
+                                                  Container(
+                                                    padding: EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: badgeColor,
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      diagnosisType,
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  // Delete button
+                                                  InkWell(
+                                                    onTap: () => _deleteRiwayat(
+                                                        riwayat['composite_key']),
+                                                    child: Container(
+                                                      padding: EdgeInsets.all(4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.red[100],
+                                                        borderRadius: BorderRadius.circular(6),
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.delete_outline,
+                                                        size: 18,
+                                                        color: Colors.red[600],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Color(0xFF9DC08D),
-                                      foregroundColor: Colors.white,
+                                        // Content
+                                        Padding(
+                                          padding: const EdgeInsets.all(12.0),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Diagnosis: ${riwayat['diagnosis']}',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              SizedBox(height: 8),
+                                              Text(
+                                                'Gejala: $gejalaText',
+                                                style: TextStyle(fontSize: 14),
+                                              ),
+                                              SizedBox(height: 4),
+                                              Text(
+                                                'Hasil: ${riwayat['hasil'] != null ? "${(((riwayat['hasil'] as num) * 1000).floor() / 10).toStringAsFixed(1)}%" : "-"}',
+                                                style: TextStyle(fontSize: 14),
+                                              ),
+                                              SizedBox(height: 12),
+                                              Align(
+                                                alignment: Alignment.centerRight,
+                                                child: ElevatedButton(
+                                                  onPressed: () {
+                                                    print(
+                                                      "Navigating to DetailRiwayatPage with data: $riwayat",
+                                                    );
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            DetailRiwayatPage(
+                                                          detailRiwayat:
+                                                              riwayat, // Kirim data riwayat ke halaman detail
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Color(0xFF9DC08D),
+                                                    foregroundColor: Colors.white,
+                                                  ),
+                                                  child: Text('Lihat Detail'),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    child: Text('Lihat Detail'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                                  );
+                                },
+                              ),
                       ),
-                    );
-                  },
-                ),
+                    ],
+                  ),
       ),
     );
   }

@@ -211,7 +211,7 @@ class _AdminPageState extends State<AdminPage> {
                 },
               ),
               ListTile(
-                title: Text('Data Pengguna'),
+                title: Text('Daftar Pengguna'),
                 onTap: () {
                   Navigator.push(
                     context,

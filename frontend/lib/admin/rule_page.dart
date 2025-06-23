@@ -241,7 +241,7 @@ class _RulePageState extends State<RulePage> {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0), // Reduced from 16.0
         child: Column(
           children: [
             Row(
@@ -252,15 +252,17 @@ class _RulePageState extends State<RulePage> {
                     controller: searchController,
                     decoration: InputDecoration(
                       hintText: 'Cari berdasarkan nama penyakit, hama, atau gejala...',
-                      prefixIcon: Icon(Icons.search),
+                      prefixIcon: Icon(Icons.search, size: 20), // Reduced icon size
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8), // Reduced padding
+                      isDense: true, // Makes the field more compact
                     ),
+                    style: TextStyle(fontSize: 14), // Reduced font size
                   ),
                 ),
-                SizedBox(width: 16),
+                SizedBox(width: 12), // Reduced from 16
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     value: selectedFilter,
@@ -269,12 +271,14 @@ class _RulePageState extends State<RulePage> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8), // Reduced padding
+                      isDense: true, // Makes the field more compact
                     ),
+                    style: TextStyle(fontSize: 14, color: Colors.black), // Reduced font size
                     items: ['Semua', 'Penyakit', 'Hama'].map((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
-                        child: Text(value),
+                        child: Text(value, style: TextStyle(fontSize: 14)), // Consistent font size
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
@@ -287,7 +291,7 @@ class _RulePageState extends State<RulePage> {
                 ),
               ],
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 12), // Reduced from 16
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -296,6 +300,7 @@ class _RulePageState extends State<RulePage> {
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     color: Colors.grey[600],
+                    fontSize: 13, // Reduced font size
                   ),
                 ),
                 Row(
@@ -318,16 +323,16 @@ class _RulePageState extends State<RulePage> {
                           ),
                         ).then((_) => fetchRules());
                       },
-                      icon: Icon(Icons.bug_report, size: 16),
-                      label: Text("Rule Hama", style: TextStyle(fontSize: 12)),
+                      icon: Icon(Icons.bug_report, size: 14), // Reduced from 16
+                      label: Text("Rule Hama", style: TextStyle(fontSize: 11)), // Reduced from 12
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        minimumSize: Size(0, 36),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced padding
+                        minimumSize: Size(0, 32), // Reduced from 36
                       ),
                     ),
-                    SizedBox(width: 8),
+                    SizedBox(width: 6), // Reduced from 8
                     ElevatedButton.icon(
                       onPressed: () {
                         Navigator.push(
@@ -346,13 +351,13 @@ class _RulePageState extends State<RulePage> {
                           ),
                         ).then((_) => fetchRules());
                       },
-                      icon: Icon(Icons.healing, size: 16),
-                      label: Text("Rule Penyakit", style: TextStyle(fontSize: 12)),
+                      icon: Icon(Icons.healing, size: 14), // Reduced from 16
+                      label: Text("Rule Penyakit", style: TextStyle(fontSize: 11)), // Reduced from 12
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        minimumSize: Size(0, 36),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced padding
+                        minimumSize: Size(0, 32), // Reduced from 36
                       ),
                     ),
                   ],
@@ -559,43 +564,75 @@ class _RulePageState extends State<RulePage> {
     return Card(
       elevation: 1,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Menampilkan ${(currentPage * rowsPerPage) + 1} - ${((currentPage + 1) * rowsPerPage > filteredRules.length) ? filteredRules.length : (currentPage + 1) * rowsPerPage} dari ${filteredRules.length}',
-              style: TextStyle(color: Colors.grey[600]),
+            Flexible(
+              child: Text(
+                '${(currentPage * rowsPerPage) + 1}-${((currentPage + 1) * rowsPerPage > filteredRules.length) ? filteredRules.length : (currentPage + 1) * rowsPerPage} / ${filteredRules.length}',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
             ),
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: Icon(Icons.first_page),
+                  icon: Icon(Icons.first_page, size: 18),
                   onPressed: currentPage > 0
                       ? () => setState(() => currentPage = 0)
                       : null,
+                  padding: EdgeInsets.all(4),
+                  constraints: BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.chevron_left),
+                  icon: Icon(Icons.chevron_left, size: 18),
                   onPressed: currentPage > 0
                       ? () => setState(() => currentPage--)
                       : null,
+                  padding: EdgeInsets.all(4),
+                  constraints: BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                 ),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: Text('${currentPage + 1} / $totalPages'),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  child: Text(
+                    '${currentPage + 1}/$totalPages',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.chevron_right),
+                  icon: Icon(Icons.chevron_right, size: 18),
                   onPressed: (currentPage + 1) * rowsPerPage < filteredRules.length
                       ? () => setState(() => currentPage++)
                       : null,
+                  padding: EdgeInsets.all(4),
+                  constraints: BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.last_page),
+                  icon: Icon(Icons.last_page, size: 18),
                   onPressed: (currentPage + 1) * rowsPerPage < filteredRules.length
                       ? () => setState(() => currentPage = totalPages - 1)
                       : null,
+                  padding: EdgeInsets.all(4),
+                  constraints: BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                 ),
               ],
             ),
@@ -612,13 +649,6 @@ class _RulePageState extends State<RulePage> {
         title: const Text('Halaman Aturan'),
         backgroundColor: Color(0xFF9DC08D),
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: fetchRules,
-            tooltip: 'Refresh Data',
-          ),
-        ],
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())

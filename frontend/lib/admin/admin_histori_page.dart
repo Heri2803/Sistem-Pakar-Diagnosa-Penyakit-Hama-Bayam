@@ -19,6 +19,21 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
   TextEditingController searchController = TextEditingController();
   String searchQuery = '';
 
+  // Date filter variables
+  DateTime? selectedFromDate;
+  DateTime? selectedToDate;
+  String? selectedMonth;
+  String? selectedYear;
+  
+  // Month and year options
+  final List<String> months = [
+    'Semua Bulan',
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  
+  List<String> years = ['Semua Tahun'];
+
   // Pagination variables
   int _rowsPerPage = 10;
   int _currentPage = 0;
@@ -28,6 +43,9 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
   @override
   void initState() {
     super.initState();
+    _initializeYears();
+    selectedMonth = 'Semua Bulan';
+    selectedYear = 'Semua Tahun';
     _loadHistoriData();
     searchController.addListener(_onSearchChanged);
   }
@@ -39,6 +57,13 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
     super.dispose();
   }
 
+  void _initializeYears() {
+    int currentYear = DateTime.now().year;
+    for (int i = currentYear; i >= currentYear - 10; i--) {
+      years.add(i.toString());
+    }
+  }
+
   void _onSearchChanged() {
     setState(() {
       searchQuery = searchController.text.toLowerCase();
@@ -47,17 +72,66 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
     });
   }
 
+  void _onDateFilterChanged() {
+    setState(() {
+      _filterData();
+      _updatePagination(0); // Reset ke halaman pertama saat filter
+    });
+  }
+
   void _filterData() {
-    if (searchQuery.isEmpty) {
-      filteredHistoriData = List.from(groupedHistoriData);
-    } else {
-      filteredHistoriData = groupedHistoriData.where((histori) {
+    List<Map<String, dynamic>> tempData = List.from(groupedHistoriData);
+
+    // Filter berdasarkan search query
+    if (searchQuery.isNotEmpty) {
+      tempData = tempData.where((histori) {
         final userName = (histori['userName'] ?? '').toString().toLowerCase();
         final diagnosa = (histori['diagnosa'] ?? '').toString().toLowerCase();
         
         return userName.contains(searchQuery) || diagnosa.contains(searchQuery);
       }).toList();
     }
+
+    // Filter berdasarkan range tanggal
+    if (selectedFromDate != null && selectedToDate != null) {
+      tempData = tempData.where((histori) {
+        if (histori['tanggal_diagnosa'] == null) return false;
+        
+        try {
+          DateTime itemDate = DateTime.parse(histori['tanggal_diagnosa']);
+          DateTime fromDate = DateTime(selectedFromDate!.year, selectedFromDate!.month, selectedFromDate!.day);
+          DateTime toDate = DateTime(selectedToDate!.year, selectedToDate!.month, selectedToDate!.day, 23, 59, 59);
+          
+          return itemDate.isAfter(fromDate.subtract(Duration(seconds: 1))) && 
+                 itemDate.isBefore(toDate.add(Duration(seconds: 1)));
+        } catch (e) {
+          return false;
+        }
+      }).toList();
+    }
+
+    // Filter berdasarkan bulan dan tahun
+    if (selectedMonth != 'Semua Bulan' || selectedYear != 'Semua Tahun') {
+      tempData = tempData.where((histori) {
+        if (histori['tanggal_diagnosa'] == null) return false;
+        
+        try {
+          DateTime itemDate = DateTime.parse(histori['tanggal_diagnosa']);
+          
+          bool monthMatch = selectedMonth == 'Semua Bulan' || 
+                           itemDate.month == months.indexOf(selectedMonth!);
+          
+          bool yearMatch = selectedYear == 'Semua Tahun' || 
+                          itemDate.year.toString() == selectedYear;
+          
+          return monthMatch && yearMatch;
+        } catch (e) {
+          return false;
+        }
+      }).toList();
+    }
+
+    filteredHistoriData = tempData;
   }
 
   Future<void> _loadHistoriData() async {
@@ -214,11 +288,59 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
     );
   }
 
+  // Function to pick date range
+  Future<void> _selectDateRange() async {
+    DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: selectedFromDate != null && selectedToDate != null 
+        ? DateTimeRange(start: selectedFromDate!, end: selectedToDate!)
+        : null,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Color(0xFF9DC08D),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        selectedFromDate = picked.start;
+        selectedToDate = picked.end;
+        // Reset month/year filter when date range is selected
+        selectedMonth = 'Semua Bulan';
+        selectedYear = 'Semua Tahun';
+        _onDateFilterChanged();
+      });
+    }
+  }
+
+  // Function to clear date filter
+  void _clearDateFilter() {
+    setState(() {
+      selectedFromDate = null;
+      selectedToDate = null;
+      selectedMonth = 'Semua Bulan';
+      selectedYear = 'Semua Tahun';
+      _onDateFilterChanged();
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Riwayat Diagnosa'),
+        title: Text('Halaman Histori User'),
         backgroundColor: Color(0xFF9DC08D),
       ),
       body: isLoading
@@ -265,6 +387,139 @@ class _AdminHistoriPageState extends State<AdminHistoriPage> {
                     ),
                   ),
                 ),
+
+                // Date Filter Section
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Filter Tanggal',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF9DC08D),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      
+                      // Date Range Picker
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _selectDateRange,
+                              icon: Icon(Icons.date_range, size: 18),
+                              label: Text(
+                                selectedFromDate != null && selectedToDate != null
+                                    ? '${DateFormat('dd/MM/yyyy').format(selectedFromDate!)} - ${DateFormat('dd/MM/yyyy').format(selectedToDate!)}'
+                                    : 'Pilih Rentang Tanggal',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Color(0xFF9DC08D),
+                                side: BorderSide(color: Color(0xFF9DC08D)),
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          if (selectedFromDate != null || selectedToDate != null || 
+                              selectedMonth != 'Semua Bulan' || selectedYear != 'Semua Tahun')
+                            IconButton(
+                              onPressed: _clearDateFilter,
+                              icon: Icon(Icons.clear, size: 18),
+                              tooltip: 'Hapus Filter',
+                              padding: EdgeInsets.all(8),
+                              constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                            ),
+                        ],
+                      ),
+                      
+                      SizedBox(height: 12),
+                      Text('atau', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                      SizedBox(height: 8),
+                      
+                      // Month and Year Dropdowns
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: selectedMonth,
+                              decoration: InputDecoration(
+                                labelText: 'Bulan',
+                                labelStyle: TextStyle(fontSize: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                isDense: true,
+                              ),
+                              items: months.map((month) {
+                                return DropdownMenuItem<String>(
+                                  value: month,
+                                  child: Text(month, style: TextStyle(fontSize: 12)),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedMonth = value;
+                                  // Clear date range when month/year is selected
+                                  if (value != 'Semua Bulan') {
+                                    selectedFromDate = null;
+                                    selectedToDate = null;
+                                  }
+                                  _onDateFilterChanged();
+                                });
+                              },
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: selectedYear,
+                              decoration: InputDecoration(
+                                labelText: 'Tahun',
+                                labelStyle: TextStyle(fontSize: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                isDense: true,
+                              ),
+                              items: years.map((year) {
+                                return DropdownMenuItem<String>(
+                                  value: year,
+                                  child: Text(year, style: TextStyle(fontSize: 12)),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedYear = value;
+                                  // Clear date range when month/year is selected
+                                  if (value != 'Semua Tahun') {
+                                    selectedFromDate = null;
+                                    selectedToDate = null;
+                                  }
+                                  _onDateFilterChanged();
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                SizedBox(height: 16),
                 
                 Expanded(
                   child: filteredHistoriData.isEmpty && searchQuery.isNotEmpty

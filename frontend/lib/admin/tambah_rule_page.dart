@@ -313,7 +313,10 @@ class _TambahRulePageState extends State<TambahRulePage> {
                                   SizedBox(
                                     width: 80,
                                     child: TextField(
-                                      keyboardType: TextInputType.number,
+                                      keyboardType:
+                                          TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
                                       decoration: InputDecoration(
                                         labelText: "Nilai Pakar",
                                         border: OutlineInputBorder(),
@@ -321,8 +324,49 @@ class _TambahRulePageState extends State<TambahRulePage> {
                                       onChanged: (value) {
                                         setState(() {
                                           if (value.isNotEmpty) {
+                                            double parsedValue =
+                                                double.tryParse(value) ?? 0.0;
+
+                                            // Cek apakah nilai lebih dari 1
+                                            if (parsedValue > 1) {
+                                              // Tampilkan dialog peringatan
+                                              showDialog(
+                                                context: context,
+                                                builder: (
+                                                  BuildContext context,
+                                                ) {
+                                                  return AlertDialog(
+                                                    title: Text("Peringatan"),
+                                                    content: Text(
+                                                      "Nilai yang diisi maksimal 1",
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          Navigator.of(
+                                                            context,
+                                                          ).pop();
+                                                        },
+                                                        child: Text("OK"),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+
+                                              // Reset nilai ke kosong atau ke nilai sebelumnya
+                                              nilaiPakarList[index] = 0.0;
+
+                                              // Optional: Reset TextField ke kosong
+                                              // Anda bisa menambahkan TextEditingController untuk mengontrol TextField
+                                            } else {
+                                              // Simpan nilai jika valid (≤ 1)
+                                              nilaiPakarList[index] =
+                                                  parsedValue;
+                                            }
+                                          } else {
                                             nilaiPakarList[index] =
-                                                double.tryParse(value) ?? 0.5;
+                                                0.0; // Default jika kosong
                                           }
                                         });
                                       },

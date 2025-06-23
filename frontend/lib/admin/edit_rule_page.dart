@@ -369,37 +369,114 @@ class _EditRulePageState extends State<EditRulePage> {
                                   SizedBox(width: 16),
                                   SizedBox(
                                     width: 80,
-                                    child: TextField(
-                                      keyboardType: TextInputType.number,
-                                      // Gunakan TextEditingController untuk menampilkan nilai awal
-                                      controller: TextEditingController(
-                                        text:
-                                            nilaiPakarList.length > index
-                                                ? nilaiPakarList[index]
-                                                    .toString()
-                                                : "0.5",
-                                      ),
-                                      decoration: InputDecoration(
-                                        labelText: "Nilai Pakar",
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          if (value.isNotEmpty) {
-                                            // Pastikan index ada dalam range
-                                            if (nilaiPakarList.length <=
-                                                index) {
-                                              // Tambahkan nilai baru jika index belum ada
-                                              nilaiPakarList.add(
-                                                double.tryParse(value) ?? 0.5,
-                                              );
-                                            } else {
-                                              // Update nilai jika index sudah ada
-                                              nilaiPakarList[index] =
+                                    child: StatefulBuilder(
+                                      // Gunakan ini untuk menghindari pembuatan controller terus-menerus di build
+                                      builder: (context, setLocalState) {
+                                        final controller =
+                                            TextEditingController(
+                                              text:
+                                                  nilaiPakarList.length > index
+                                                      ? nilaiPakarList[index]
+                                                          .toString()
+                                                      : "0.5",
+                                            );
+                                        return TextField(
+                                          keyboardType:
+                                              TextInputType.numberWithOptions(
+                                                decimal: true,
+                                              ),
+                                          controller: controller,
+                                          decoration: InputDecoration(
+                                            labelText: "Nilai Pakar",
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          onChanged: (value) {
+                                            if (value.isNotEmpty) {
+                                              double parsedValue =
                                                   double.tryParse(value) ?? 0.5;
+
+                                              // Cek apakah nilai lebih dari 1
+                                              if (parsedValue > 1) {
+                                                // Tampilkan dialog peringatan
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (
+                                                    BuildContext context,
+                                                  ) {
+                                                    return AlertDialog(
+                                                      title: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.warning,
+                                                            color:
+                                                                Colors.orange,
+                                                          ),
+                                                          SizedBox(width: 8),
+                                                          Text("Peringatan"),
+                                                        ],
+                                                      ),
+                                                      content: Text(
+                                                        "Nilai yang diisi maksimal 1",
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () {
+                                                            Navigator.of(
+                                                              context,
+                                                            ).pop();
+                                                            // Reset nilai setelah dialog ditutup
+                                                            String
+                                                            previousValue =
+                                                                nilaiPakarList
+                                                                            .length >
+                                                                        index
+                                                                    ? nilaiPakarList[index]
+                                                                        .toString()
+                                                                    : "0.5";
+                                                            controller.text =
+                                                                previousValue;
+                                                            controller
+                                                                    .selection =
+                                                                TextSelection.fromPosition(
+                                                                  TextPosition(
+                                                                    offset:
+                                                                        controller
+                                                                            .text
+                                                                            .length,
+                                                                  ),
+                                                                );
+                                                          },
+                                                          child: Text("OK"),
+                                                        ),
+                                                      ],
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              10,
+                                                            ),
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+
+                                                return; // Keluar dari fungsi tanpa menyimpan nilai
+                                              }
+
+                                              // Simpan nilai jika valid (≤ 1)
+                                              setState(() {
+                                                if (nilaiPakarList.length <=
+                                                    index) {
+                                                  nilaiPakarList.add(
+                                                    parsedValue,
+                                                  );
+                                                } else {
+                                                  nilaiPakarList[index] =
+                                                      parsedValue;
+                                                }
+                                              });
                                             }
-                                          }
-                                        });
+                                          },
+                                        );
                                       },
                                     ),
                                   ),

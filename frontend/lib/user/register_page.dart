@@ -14,6 +14,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController alamatController = TextEditingController();
   final TextEditingController nomorHpController = TextEditingController();
   bool _isLoading = false;
+  bool _isPasswordVisible = false; // Variable untuk toggle password visibility
 
   final ApiService apiService = ApiService();
 
@@ -145,7 +146,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     SizedBox(height: 20),
                     TextField(
-                      obscureText: true,
+                      obscureText: !_isPasswordVisible, // Toggle berdasarkan state
                       decoration: InputDecoration(
                         labelText: 'Password',
                         labelStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
@@ -155,6 +156,19 @@ class _RegisterPageState extends State<RegisterPage> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide(color: Colors.black.withOpacity(0.6), width: 2),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isPasswordVisible 
+                                ? Icons.visibility 
+                                : Icons.visibility_off,
+                            color: Color(0xFF9DC08D),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
                         ),
                       ),
                       controller: passwordController,
